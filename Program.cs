@@ -1,4 +1,5 @@
 ﻿using StalNoteM.Application;
+using StalNoteM.Data.Users;
 
 namespace StalNoteM
 {
@@ -8,14 +9,14 @@ namespace StalNoteM
         {
             BotBuilder builder = new BotBuilder();
             await builder.InitialApp();
-            builder.StartBeagling(18500);
-            /*
-            builder.sendMsgAllUsers("Возможны перебои в работе бота, миграция базы данных.\n" +
-                                    "Так же возможно ошибочные ответы бота",
-                                    "F:\\Repos\\StalNote\\bin\\Debug\\Updates\\0.0.1.png");
-            */
+            builder.StartBeagling(10000);
             Console.ReadLine();
-            
+            /*
+            builder.sendMsgAllUsers(
+                "Довожу для всех, на данный момент времени бот переводиться в полный приват, если кто-то хочет чтобы бот отправлял сообщения и ему, писать в личку, стоимость обсудим",
+                                    "F:\\StalNote\\StalNoteBot\\StalNoteM\\bin\\Debug\\net8.0\\Updates\\update.png");
+            */
+
             Console.WriteLine("Nda");
         }
     }

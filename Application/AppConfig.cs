@@ -1,4 +1,4 @@
-﻿using StalNoteM.Item.Equipment;
+﻿using StalNoteM.Data.DataItem;
 using StalNoteM.Item.Society;
 using StalNoteM.Item.Auction;
 
@@ -20,6 +20,6 @@ namespace StalNoteM.Application
         public static string WayItems {  get; set; }
         public static string WayGraphs {  get; set; }
         public static double CountMinuts { get; set; }
-        public static List<Item.Equipment.Item> Items { get; set; }
+        public static List<Data.DataItem.Item> Items { get; set; }
     }
 }

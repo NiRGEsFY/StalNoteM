@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace StalNoteM.Data.AuctionItem;
 
@@ -12,7 +10,6 @@ public class SelledItem
     public DateTime Time { get; set; }
     [MaxLength(20)]
     public string ItemId { get; set; }
-
     public double? Stats { get; set; }
     public int? Pottential { get; set; }
     public int? Quality { get; set; }

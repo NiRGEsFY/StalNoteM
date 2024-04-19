@@ -1,4 +1,4 @@
-﻿namespace StalNoteM.Item.Equipment
+﻿namespace StalNoteM.Data.DataItem
 {
     public struct Name
     {

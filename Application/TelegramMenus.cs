@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using StalNoteM.Data.DataItem;
 using StalNoteM.Data.Users;
+using StalNoteM.Item.Society;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace StalNoteM.Application
@@ -23,7 +25,7 @@ namespace StalNoteM.Application
                 {
                     new List<KeyboardButton>{ new KeyboardButton("Добавить ищейку"), new KeyboardButton("Удалить ищейку") },
                     new List<KeyboardButton>{ new KeyboardButton("Изменить цену ищейки"), new KeyboardButton("График цен") },
-                    new List<KeyboardButton>{ new KeyboardButton("Мои ищейки") }
+                    new List<KeyboardButton>{ new KeyboardButton("Мои ищейки"), new KeyboardButton("Настройки ищеек") }
                 });
             keyBoard.IsPersistent = true;
             keyBoard.ResizeKeyboard = true;
@@ -50,7 +52,6 @@ namespace StalNoteM.Application
             var sendMenu = new InlineKeyboardMarkup(sendMenuPart);
             return sendMenu;
         }
-
         public static IReplyMarkup ChoiceQualityArtefact(string itemId)
         {
             var sendMenuPart = new List<List<InlineKeyboardButton>>
@@ -90,6 +91,108 @@ namespace StalNoteM.Application
                                     InlineKeyboardButton.WithCallbackData(
                                         text: $"Лег.",
                                         callbackData: $"ВыбКач|{itemId}|5")
+                                },
+                new List<InlineKeyboardButton>()
+                            {
+                                InlineKeyboardButton.WithCallbackData(
+                                    text: "Отмена",
+                                    callbackData: $"Отмена|Отмена"
+                            )}
+            };
+
+            var sendMenu = new InlineKeyboardMarkup(sendMenuPart);
+            return sendMenu;
+
+        }
+        public static IReplyMarkup ChoiceQualityArtefactToGraph(string itemId,string time)
+        {
+            var sendMenuPart = new List<List<InlineKeyboardButton>>
+            {
+                new List<InlineKeyboardButton>
+                                {
+                                    InlineKeyboardButton.WithCallbackData(
+                                        text: $"Обыч.",
+                                        callbackData: $"ОтпГрафАрт|{itemId}|0|{time}")
+                                },
+                new List<InlineKeyboardButton>
+                                {
+                                    InlineKeyboardButton.WithCallbackData(
+                                        text: $"Необыч.",
+                                        callbackData: $"ОтпГрафАрт|{itemId}|1|{time}")
+                                },
+                new List<InlineKeyboardButton>
+                                {
+                                    InlineKeyboardButton.WithCallbackData(
+                                        text: $"Особ.",
+                                        callbackData: $"ОтпГрафАрт|{itemId}|2|{time}")
+                                },
+                new List<InlineKeyboardButton>
+                                {
+                                    InlineKeyboardButton.WithCallbackData(
+                                        text: $"Ред.",
+                                        callbackData: $"ОтпГрафАрт|{itemId}|3|{time}")
+                                },
+                new List<InlineKeyboardButton>
+                                {
+                                    InlineKeyboardButton.WithCallbackData(
+                                        text: $"Искл.",
+                                        callbackData: $"ОтпГрафАрт|{itemId}|4|{time}")
+                                },
+                new List<InlineKeyboardButton>
+                                {
+                                    InlineKeyboardButton.WithCallbackData(
+                                        text: $"Лег.",
+                                        callbackData: $"ОтпГрафАрт|{itemId}|5|{time}")
+                                },
+                new List<InlineKeyboardButton>()
+                            {
+                                InlineKeyboardButton.WithCallbackData(
+                                    text: "Отмена",
+                                    callbackData: $"Отмена|Отмена"
+                            )}
+            };
+
+            var sendMenu = new InlineKeyboardMarkup(sendMenuPart);
+            return sendMenu;
+
+        }
+        public static IReplyMarkup ChoicePottentialArtefactToGraph(string itemId,string qualtity,string time)
+        {
+            var sendMenuPart = new List<List<InlineKeyboardButton>>();
+            sendMenuPart.Add(new List<InlineKeyboardButton>
+                                {
+                                    InlineKeyboardButton.WithCallbackData(
+                                        text: $"{0}",
+                                        callbackData: $"ОтпГрафАртПот|{itemId}|{qualtity}|{0}|{time}")
+                                });
+            for (int i = 1; i < 16; i++)
+            {
+                sendMenuPart.Add(new List<InlineKeyboardButton>
+                                {
+                                    InlineKeyboardButton.WithCallbackData(
+                                        text: $"+{i}",
+                                        callbackData: $"ОтпГрафАртПот|{itemId}|{qualtity}|{i}|{time}")
+                                });
+            }
+            sendMenuPart.Add(new List<InlineKeyboardButton>()
+                            {
+                                InlineKeyboardButton.WithCallbackData(
+                                    text: "Отмена",
+                                    callbackData: $"Отмена|Отмена"
+                            )});
+            var sendMenu = new InlineKeyboardMarkup(sendMenuPart);
+            return sendMenu;
+
+        }
+        public static IReplyMarkup ShowGraph(string itemId, int time, int quality, int pottential)
+        {
+            List<List<InlineKeyboardButton>> sendMenuPart = new List<List<InlineKeyboardButton>>
+            {
+                new List<InlineKeyboardButton>
+                                {
+                                    InlineKeyboardButton.WithCallbackData(
+                                        text: $"Вывести график.",
+                                        callbackData: $"ВывГраф|{itemId}|{quality}|{pottential}|{time}")
                                 },
                 new List<InlineKeyboardButton>()
                             {
@@ -198,19 +301,19 @@ namespace StalNoteM.Application
             switch (roleName) 
             {
                 case "Новичек":
-                    times = new List<int>() { 6 };
+                    times = new List<int>() { 6, 12, 24, 48, 72, 168, 336, 672 };
                     break;
                 case "Бывалый":
-                    times = new List<int>() { 6, 12, 24 };
+                    times = new List<int>() { 6, 12, 24, 48, 72, 168, 336, 672 };
                     break;
                 case "Опытный":
-                    times = new List<int>() { 6, 12, 24, 48, 72 };
+                    times = new List<int>() { 6, 12, 24, 48, 72, 168, 336, 672 };
                     break;
                 case "Ветеран":
-                    times = new List<int>() { 6, 12, 24, 48, 72, 168 };
+                    times = new List<int>() { 6, 12, 24, 48, 72, 168, 336, 672 };
                     break;
                 case "Мастер":
-                    times = new List<int>() { 6, 12, 24, 48, 72, 168, 336 };
+                    times = new List<int>() { 6, 12, 24, 48, 72, 168, 336, 672 };
                     break;
                 case "Легенда":
                     times = new List<int>() { 6, 12, 24, 48, 72, 168, 336, 672 };
@@ -262,6 +365,45 @@ namespace StalNoteM.Application
                             )});
             var sendMenu = new InlineKeyboardMarkup(sendMenuPart);
             return sendMenu;
+        }
+        public static IReplyMarkup UserSetting(long chatId)
+        {
+            using (var context = new ApplicationDbContext())
+            {
+                Data.Users.User user = context.Users.Include(x=>x.UserTelegram)
+                                                    .Where(x=>x.UserTelegram.ChatId == chatId)
+                                                    .Include(x=>x.UserConfig)
+                                                    .Include(x=>x.Role)
+                                                    .FirstOrDefault();
+
+                var sendMenuPart = new List<List<InlineKeyboardButton>>();
+                if (user.Role.Cost > -1)
+                {
+                    sendMenuPart.Add(new List<InlineKeyboardButton>()
+                            {
+                                InlineKeyboardButton.WithCallbackData(
+                                    text: $"Отправлять артефакты в ищейке - {user.UserConfig.ShowArt}",
+                                    callbackData: $"Настройки|Арт"
+                            )});
+                }
+                if (user.Role.Cost > 199)
+                {
+                    sendMenuPart.Add(new List<InlineKeyboardButton>()
+                            {
+                                InlineKeyboardButton.WithCallbackData(
+                                    text: $"Отправлять график в ищейке - {user.UserConfig.ShowGraph}",
+                                    callbackData: $"Настройки|Граф"
+                            )});
+                }
+                sendMenuPart.Add(new List<InlineKeyboardButton>()
+                            {
+                                InlineKeyboardButton.WithCallbackData(
+                                    text: "Отмена",
+                                    callbackData: $"Отмена|Отмена"
+                            )});
+                var sendMenu = new InlineKeyboardMarkup(sendMenuPart);
+                return sendMenu;
+            }
         }
         public static IReplyMarkup PremiumMenus()
         {

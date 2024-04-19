@@ -106,6 +106,513 @@ namespace StalNoteM.Migrations
                     b.ToTable("SelledItems");
                 });
 
+            modelBuilder.Entity("StalNoteM.Data.DataItem.ArmorItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("BioinfectionProtection")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Bleeding")
+                        .HasColumnType("float");
+
+                    b.Property<double>("BleedingProtection")
+                        .HasColumnType("float");
+
+                    b.Property<double>("BulletResistance")
+                        .HasColumnType("float");
+
+                    b.Property<double>("CarryWeight")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Class")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("CompatibleBackpacks")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("CompatibleContainers")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<double>("ExplosionProtection")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Features")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ItemId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<double>("LacerationProtection")
+                        .HasColumnType("float");
+
+                    b.Property<double>("MoveSpeed")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<double>("PeriodicHealing")
+                        .HasColumnType("float");
+
+                    b.Property<int>("Pottential")
+                        .HasColumnType("int");
+
+                    b.Property<double>("PsyProtection")
+                        .HasColumnType("float");
+
+                    b.Property<double>("RadiationProtection")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Rank")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<double>("ResistanceToChemicals")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ResistanceToElectricity")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ResistanceToFire")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Stability")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Stamina")
+                        .HasColumnType("float");
+
+                    b.Property<double>("StaminaRegeneration")
+                        .HasColumnType("float");
+
+                    b.Property<string>("SubType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<double>("ThermalProtection")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<double>("Weight")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ArmorsItems");
+                });
+
+            modelBuilder.Entity("StalNoteM.Data.DataItem.ArtefactItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("BioinfectionInfectionMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("BioinfectionInfectionMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("BioinfectionProtectionMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("BioinfectionProtectionMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("BioinfectionResistanceMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("BioinfectionResistanceMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("BleedingMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("BleedingMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("BulletResistanceMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("BulletResistanceMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("CarryWeightMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("CarryWeightMin")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<double>("ChargeRequiredToActivateMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ChargeRequiredToActivateMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ExplosionProtectionMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ExplosionProtectionMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("FrostMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("FrostMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("HealingEffectivenessMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("HealingEffectivenessMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("HealthRegenerationMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("HealthRegenerationMin")
+                        .HasColumnType("float");
+
+                    b.Property<string>("ItemId")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<double>("LacerationProtectionMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("LacerationProtectionMin")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Pottential")
+                        .HasColumnType("int");
+
+                    b.Property<double>("PsyEmissionsMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("PsyEmissionsMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("PsyEmissionsProtectionMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("PsyEmissionsProtectionMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("PsyEmissionsResistanceMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("PsyEmissionsResistanceMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("RadiationMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("RadiationMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("RadiationProtectionMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("RadiationProtectionMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("RadiationResistanceMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("RadiationResistanceMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ReactionToBurnsMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ReactionToBurnsMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ReactionToChemicalBurnsMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ReactionToChemicalBurnsMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ReactionToElectricityMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ReactionToElectricityMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ReactionToLacerationMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ReactionToLacerationMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ReducesDamageByMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ReducesDamageByMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ReloadMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ReloadMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ResistToFireMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ResistToFireMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ResistanceToChemicalsMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("ResistanceToChemicalsMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("SpeedMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("SpeedMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("StabilityMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("StabilityMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("StaminaMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("StaminaMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("StaminaRegenerationMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("StaminaRegenerationMin")
+                        .HasColumnType("float");
+
+                    b.Property<string>("SubType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<double>("TemperatureMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("TemperatureMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("TemperatureProtectionMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("TemperatureProtectionMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("TemperatureResistanceMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("TemperatureResistanceMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("TriggersDamage")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)");
+
+                    b.Property<double>("VitalityMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("VitalityMin")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Weight")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ArtefactItems");
+                });
+
+            modelBuilder.Entity("StalNoteM.Data.DataItem.Bullet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AmmoType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<double>("ArmorPenetration")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Bleeding")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Burning")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Class")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<double>("Damage")
+                        .HasColumnType("float");
+
+                    b.Property<string>("ItemId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<double>("NumberOfProjectiles")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Spread")
+                        .HasColumnType("float");
+
+                    b.Property<double>("StoppingPower")
+                        .HasColumnType("float");
+
+                    b.Property<string>("SubType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<double>("Weight")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Bullets");
+                });
+
+            modelBuilder.Entity("StalNoteM.Data.DataItem.CaseItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("BiologicalInfection")
+                        .HasColumnType("float");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<double>("CarryWeight")
+                        .HasColumnType("float");
+
+                    b.Property<string>("CaseType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Class")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<double>("Effectiveness")
+                        .HasColumnType("float");
+
+                    b.Property<double>("InnerProtection")
+                        .HasColumnType("float");
+
+                    b.Property<string>("ItemId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<double>("Radiation")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Rank")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<double>("Temperature")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<double>("Weight")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CaseItems");
+                });
+
             modelBuilder.Entity("StalNoteM.Data.DataItem.SqlItem", b =>
                 {
                     b.Property<int>("Id")
@@ -150,6 +657,165 @@ namespace StalNoteM.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("SqlItems");
+                });
+
+            modelBuilder.Entity("StalNoteM.Data.DataItem.WeaponItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("AimingTime")
+                        .HasColumnType("float");
+
+                    b.Property<string>("AmmoType")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<double>("ArmorPenetration")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Bleeding")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Class")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<double>("Damage")
+                        .HasColumnType("float");
+
+                    b.Property<double>("DamageDecreaseEnd")
+                        .HasColumnType("float");
+
+                    b.Property<double>("DamageDecreaseStart")
+                        .HasColumnType("float");
+
+                    b.Property<double>("DamageModifierHeadshot")
+                        .HasColumnType("float");
+
+                    b.Property<double>("DamageModifierLimb")
+                        .HasColumnType("float");
+
+                    b.Property<double>("DamageToMutants")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<double>("DrawTime")
+                        .HasColumnType("float");
+
+                    b.Property<double>("EndDamage")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Features")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<double>("HipFireSpread")
+                        .HasColumnType("float");
+
+                    b.Property<double>("HorizontalRecoil")
+                        .HasColumnType("float");
+
+                    b.Property<string>("ItemId")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<double>("MagazineCapacity")
+                        .HasColumnType("float");
+
+                    b.Property<double>("MaxDistance")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Pottential")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Rank")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<double>("RateOfFire")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Reload")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Spread")
+                        .HasColumnType("float");
+
+                    b.Property<double>("StartDamage")
+                        .HasColumnType("float");
+
+                    b.Property<double>("StoppingPower")
+                        .HasColumnType("float");
+
+                    b.Property<string>("SubType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<double>("TacticalReload")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<double>("VerticalRecoil")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Weight")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("WeaponsItems");
+                });
+
+            modelBuilder.Entity("StalNoteM.Data.Other.Advertising", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Context")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("Count")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("End")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NameCustomer")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("Start")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Advertisings");
                 });
 
             modelBuilder.Entity("StalNoteM.Data.Users.Role", b =>
@@ -252,6 +918,31 @@ namespace StalNoteM.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("StalNoteM.Data.Users.UserConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("ShowArt")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShowGraph")
+                        .HasColumnType("bit");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserConfig");
                 });
 
             modelBuilder.Entity("StalNoteM.Data.Users.UserItem", b =>
@@ -370,6 +1061,17 @@ namespace StalNoteM.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("StalNoteM.Data.Users.UserConfig", b =>
+                {
+                    b.HasOne("StalNoteM.Data.Users.User", "User")
+                        .WithOne("UserConfig")
+                        .HasForeignKey("StalNoteM.Data.Users.UserConfig", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("StalNoteM.Data.Users.UserItem", b =>
                 {
                     b.HasOne("StalNoteM.Data.Users.User", "User")
@@ -410,6 +1112,9 @@ namespace StalNoteM.Migrations
 
             modelBuilder.Entity("StalNoteM.Data.Users.User", b =>
                 {
+                    b.Navigation("UserConfig")
+                        .IsRequired();
+
                     b.Navigation("UserItems");
 
                     b.Navigation("UserTelegram")

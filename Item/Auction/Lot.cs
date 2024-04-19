@@ -6,7 +6,7 @@ namespace StalNoteM.Item.Auction
     public class Lot
     {
         public string ItemId { get; set; }
-        public int Ammount { get; set; }
+        public int Amount { get; set; }
         public long StartPrice { get; set; }
         public long CurrentPrice { get; set; }
         public long BuyoutPrice { get; set; }
@@ -34,7 +34,7 @@ namespace StalNoteM.Item.Auction
             aucItem.BuyoutPrice = BuyoutPrice;
             aucItem.StartPrice = StartPrice;
             aucItem.CurrentPrice = CurrentPrice;
-            aucItem.Ammount = Ammount;
+            aucItem.Ammount = Amount;
             aucItem.Pottential = Additional.Ptn;
             aucItem.Quality = Additional.Qlt;
             aucItem.Stats = Additional.Stats_Random;

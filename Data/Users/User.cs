@@ -12,6 +12,7 @@ public class User : IdentityUser<Guid>
     public Role Role { get; set; }
     public UserTelegram UserTelegram { get; set; }
     public UserToken UserToken { get; set; }
+    public UserConfig UserConfig { get; set; }
     public ICollection<UserItem> UserItems { get; set; }
     [Display(Name = "Начало действия роли")]
     public DateTime? StartRole { get; set; }

@@ -1,6 +1,7 @@
 ﻿using StalNoteM.Data.AuctionItem;
 using StalNoteM.Data.Users;
 using StalNoteM.Data.DataItem;
+using StalNoteM.Data.Other;
 using Microsoft.EntityFrameworkCore;
 
 namespace StalNoteM;
@@ -23,9 +24,14 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<SelledItem> SelledItems { get; set; }
 
     public virtual DbSet<SqlItem> SqlItems { get; set; }
+    public virtual DbSet<ArmorItem> ArmorsItems { get; set; }
+    public virtual DbSet<Bullet> Bullets { get; set; }
+    public virtual DbSet<WeaponItem> WeaponsItems { get; set; }
+    public virtual DbSet<CaseItem> CaseItems { get; set; }
+    public virtual DbSet<ArtefactItem> ArtefactItems { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
-
+    public virtual DbSet<Advertising> Advertisings { get; set; }
     public virtual DbSet<UserItem> UserItems { get; set; }
     public virtual DbSet<UserToken> UserTokens { get; set; }
     public virtual DbSet<UserTelegram> UserTelegrams { get; set; }  

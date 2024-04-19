@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Text;
 using StalNoteM.Data.AuctionItem;
 using StalNoteM.Data.Users;
+using Telegram.Bot;
+using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 
 namespace StalNoteM.Application
 {
@@ -254,6 +256,7 @@ namespace StalNoteM.Application
             try
             {
                 await InitialSqlItems();
+                await InitialSiteItem();
             }
             catch (Exception ex)
             {
@@ -271,9 +274,11 @@ namespace StalNoteM.Application
             string WayItems = AppConfig.WayItems;
             using (var context = new ApplicationDbContext())
             {
+                context.SqlItems.RemoveRange(context.SqlItems);
+                context.SaveChanges();
                 if (context.SqlItems == null || context.SqlItems.Count() == 0)
                 {
-                    AppConfig.Items = new List<StalNoteM.Item.Equipment.Item>();
+                    AppConfig.Items = new List<Data.DataItem.Item>();
                     void findAllItem(string way)
                     {
                         DirectoryInfo thisDirectory = new DirectoryInfo(way);
@@ -296,8 +301,8 @@ namespace StalNoteM.Application
                                 {
                                     temp = reader.ReadToEnd();
                                 }
-                                var tempItem = new Item.Equipment.Item();
-                                tempItem = JsonConvert.DeserializeObject<Item.Equipment.Item>(temp);
+                                var tempItem = new Data.DataItem.Item();
+                                tempItem = JsonConvert.DeserializeObject<Data.DataItem.Item>(temp);
                                 AppConfig.Items.Add(tempItem);
                                 SqlItem newItem = new SqlItem();
                                 newItem.ItemId = tempItem.Id;
@@ -335,6 +340,175 @@ namespace StalNoteM.Application
                 await context.SaveChangesAsync();
             }
         }
+        private async Task InitialSiteItem()
+        {
+            using (var context = new ApplicationDbContext())
+            {
+                string WayItems = $"{AppConfig.WayItems}\\armor";
+                if (context.ArmorsItems == null || context.ArmorsItems.Count() == 0)
+                {
+                    DirectoryInfo thisDirectory = new DirectoryInfo(WayItems);
+                    foreach (var dir in thisDirectory.GetDirectories())
+                    {
+                        if (dir.Name != "device")
+                        {
+                            foreach (var item in dir.GetFiles())
+                            {
+                                string temp;
+                                using (var reader = new StreamReader(item.FullName))
+                                {
+                                    temp = reader.ReadToEnd();
+                                }
+                                var tempItem = new Data.DataItem.Item();
+                                tempItem = JsonConvert.DeserializeObject<Data.DataItem.Item>(temp);
+                                ArmorItem newArmor = new ArmorItem(tempItem);
+                                newArmor.Pottential = 0;
+                                context.ArmorsItems.Add(newArmor);
+
+
+                                string tierWay = item.DirectoryName + $"\\_variants\\{tempItem.Id}";
+                                foreach (var tierItem in new DirectoryInfo(tierWay).GetFiles())
+                                {
+                                    using (var reader = new StreamReader(tierItem.FullName))
+                                    {
+                                        temp = reader.ReadToEnd();
+                                    }
+                                    tempItem = new Data.DataItem.Item();
+                                    tempItem = JsonConvert.DeserializeObject<Data.DataItem.Item>(temp);
+                                    newArmor = new ArmorItem(tempItem);
+                                    newArmor.Pottential = int.Parse(tierItem.Name.Split('.').First());
+                                    context.ArmorsItems.Add(newArmor);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                WayItems = $"{AppConfig.WayItems}\\artefact";
+                if (context.ArtefactItems == null || context.ArtefactItems.Count() == 0)
+                {
+                    DirectoryInfo thisDirectory = new DirectoryInfo(WayItems);
+                    foreach (var dir in thisDirectory.GetDirectories())
+                    {
+                        if (dir.Name != "other_arts")
+                        {
+                            foreach (var item in dir.GetFiles())
+                            {
+                                string temp;
+                                using (var reader = new StreamReader(item.FullName))
+                                {
+                                    temp = reader.ReadToEnd();
+                                }
+                                var tempItem = new Data.DataItem.Item();
+                                tempItem = JsonConvert.DeserializeObject<Data.DataItem.Item>(temp);
+                                ArtefactItem newArt = new ArtefactItem(tempItem);
+                                newArt.Pottential = 0;
+                                context.ArtefactItems.Add(newArt);
+
+
+                                string tierWay = item.DirectoryName + $"\\_variants\\{tempItem.Id}";
+                                foreach (var tierItem in new DirectoryInfo(tierWay).GetFiles())
+                                {
+                                    using (var reader = new StreamReader(tierItem.FullName))
+                                    {
+                                        temp = reader.ReadToEnd();
+                                    }
+                                    tempItem = new Data.DataItem.Item();
+                                    tempItem = JsonConvert.DeserializeObject<Data.DataItem.Item>(temp);
+                                    newArt = new ArtefactItem(tempItem);
+                                    newArt.Pottential = int.Parse(tierItem.Name.Split('.').First());
+                                    context.ArtefactItems.Add(newArt);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                WayItems = $"{AppConfig.WayItems}\\weapon";
+                if (context.WeaponsItems == null || context.WeaponsItems.Count() == 0)
+                {
+                    DirectoryInfo thisDirectory = new DirectoryInfo(WayItems);
+                    foreach (var dir in thisDirectory.GetDirectories())
+                    {
+                        if (dir.Name != "device")
+                        {
+                            foreach (var item in dir.GetFiles())
+                            {
+                                string temp;
+                                using (var reader = new StreamReader(item.FullName))
+                                {
+                                    temp = reader.ReadToEnd();
+                                }
+                                var tempItem = new Data.DataItem.Item();
+                                tempItem = JsonConvert.DeserializeObject<Data.DataItem.Item>(temp);
+                                WeaponItem newWeapon = new WeaponItem(tempItem);
+                                newWeapon.Pottential = 0;
+                                context.WeaponsItems.Add(newWeapon);
+
+                                string tierWay = item.DirectoryName + $"\\_variants\\{tempItem.Id}";
+                                if (item.Directory.Name != "melee")
+                                {
+                                    if (new DirectoryInfo(tierWay).Exists)
+                                    {
+                                        foreach (var tierItem in new DirectoryInfo(tierWay).GetFiles())
+                                        {
+                                            using (var reader = new StreamReader(tierItem.FullName))
+                                            {
+                                                temp = reader.ReadToEnd();
+                                            }
+                                            tempItem = new Data.DataItem.Item();
+                                            tempItem = JsonConvert.DeserializeObject<Data.DataItem.Item>(temp);
+                                            newWeapon = new WeaponItem(tempItem);
+                                            newWeapon.Pottential = int.Parse(tierItem.Name.Split('.').First());
+                                            context.WeaponsItems.Add(newWeapon);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                WayItems = $"{AppConfig.WayItems}\\bullet";
+                if (context.Bullets == null || context.Bullets.Count() == 0)
+                {
+                    DirectoryInfo thisDirectory = new DirectoryInfo(WayItems);
+                    foreach (var item in thisDirectory.GetFiles())
+                    {
+                        string temp;
+                        using (var reader = new StreamReader(item.FullName))
+                        {
+                            temp = reader.ReadToEnd();
+                        }
+                        var tempItem = new Data.DataItem.Item();
+                        tempItem = JsonConvert.DeserializeObject<Data.DataItem.Item>(temp);
+                        Bullet newBullet = new Bullet(tempItem);
+                        context.Bullets.Add(newBullet);
+                    }
+                }
+
+                WayItems = $"{AppConfig.WayItems}\\containers";
+                if (context.CaseItems == null || context.CaseItems.Count() == 0)
+                {
+                    DirectoryInfo thisDirectory = new DirectoryInfo(WayItems);
+                    foreach (var item in thisDirectory.GetFiles())
+                    {
+                        string temp;
+                        using (var reader = new StreamReader(item.FullName))
+                        {
+                            temp = reader.ReadToEnd();
+                        }
+                        var tempItem = new Data.DataItem.Item();
+                        tempItem = JsonConvert.DeserializeObject<Data.DataItem.Item>(temp);
+                        CaseItem newBullet = new CaseItem(tempItem);
+                        context.CaseItems.Add(newBullet);
+                    }
+                }
+                await context.SaveChangesAsync();
+
+
+            }
+        }
         private async Task FindUniqueItemId()
         {
             using (ApplicationDbContext context = new ApplicationDbContext())
@@ -344,6 +518,11 @@ namespace StalNoteM.Application
                 {
                     Id = x.ItemId
                 });
+                foreach (var item in context.SqlItems)
+                {
+                    item.Finding = false;
+                }
+                context.SaveChanges();
                 foreach (var item in query.Distinct())
                 {
                     try
@@ -380,7 +559,11 @@ namespace StalNoteM.Application
                 var users = context.UserTelegrams.Select(x=>x.ChatId);
                 foreach (var user in users) 
                 {
-                    await TelegramBotApp.SendImage(user, text, img);
+                    var msg = await TelegramBotApp.SendImage(user, text, img);
+                    if (msg != null)
+                    {
+                        TelegramBotApp.TakeBotClient().PinChatMessageAsync(msg.Chat.Id,msg.MessageId);
+                    }
                 }
             }
         }

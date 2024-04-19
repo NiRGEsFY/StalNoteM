@@ -5,6 +5,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 using StalNoteM.Data.Users;
 using StalNoteM.Application;
 using StalNoteM.Data.DataItem;
+using Telegram.Bot.Requests;
 
 namespace StalNoteM.Application
 {
@@ -14,6 +15,10 @@ namespace StalNoteM.Application
         static Dictionary<long, Data.Users.UserItem> newUserItem;
         static TelegramBotClient client;
         static ITelegramBotClient telegramBotClient;
+        public static ITelegramBotClient TakeBotClient()
+        {
+            return telegramBotClient;
+        }
         public async static Task Initial(string token)
         {
             try
@@ -55,11 +60,14 @@ namespace StalNoteM.Application
                     if (Context.Users.Include(x=>x.UserTelegram).Where(x => x.UserTelegram.ChatId == msg.From.Id).Count() <= 0)
                     {
                         Data.Users.User newUser = new Data.Users.User();
+                        newUser.UserTelegram.UserTelegramId = msg.From.Id;
                         newUser.UserTelegram.ChatId = msg.Chat.Id;
                         newUser.UserTelegram.UserName = msg.Chat.Username;
                         newUser.UserTelegram.FirstName = msg.Chat.FirstName;
                         newUser.UserTelegram.LastName = msg.Chat.LastName;
                         newUser.Role = Context.Roles.Where(x => x.Name == "Новичек").First();
+                        newUser.UserConfig = new UserConfig();
+                        newUser.UserToken = new UserToken();
                         await Context.Users.AddAsync(newUser);
                         Context.SaveChanges();
                     }
@@ -187,7 +195,7 @@ namespace StalNoteM.Application
                         {
                             name = context.SqlItems.Where(x => x.ItemId == data[1]).First().Name;
                         }
-                        newUserItem.Add(callBack.From.Id, new UserItem() { Name = name, ItemId = data[1] });
+                        newUserItem.Add(callBack.From.Id, new UserItem() { Name = name, ItemId = data[1], Quality = 0, Pottential = 0 });
                         await botClient.SendTextMessageAsync(callBack.From.Id, "Введите цену\nЕсли хотите искать автоматически введите 0");
                         await botClient.DeleteMessageAsync(callBack.From.Id, callBack.Message.MessageId);
                     }
@@ -197,8 +205,57 @@ namespace StalNoteM.Application
                             "Выберите предмет:",
                             replyMarkup: TelegramMenus.ChoiseItemTime(data[1], callBack.From.Id));
                     break;
+                case "ВывГраф":
+                    using (var context = new ApplicationDbContext())
+                    {
+                        SqlItem sendItem = new SqlItem();
+                        sendItem = context.SqlItems.Where(x => x.ItemId == data[1] && x.Quality == int.Parse(data[2]) && x.Pottential == int.Parse(data[3])).FirstOrDefault();
+                        if (sendItem.Type.Contains("artefact"))
+                        {
+                            await TelegramBotApp.SendImage(callBack.From.Id, $"График", $"{AppConfig.WayGraphs}\\{sendItem.ItemId}\\q{sendItem.Quality}p{sendItem.Pottential}\\{data[4]}.png");
+                        }
+                        else
+                        {
+                            await TelegramBotApp.SendImage(callBack.From.Id, $"График", $"{AppConfig.WayGraphs}\\{sendItem.ItemId}\\{data[4]}.png");
+                        }
+                    }
+                        break;
                 case "ОтпГраф":
-                    await TelegramBotApp.SendImage(callBack.From.Id, "График:", $"F:\\Repos\\StalNote\\bin\\Debug\\itemsGraphs\\{data[1]}\\{data[2]}.png");
+                    using (var context = new ApplicationDbContext())
+                    {
+                        if (context.SqlItems.Where(x=>x.ItemId == data[1]).FirstOrDefault().Type.Contains("artefact"))
+                        {
+                            await TelegramBotApp.SendMessenge(callBack.From.Id, "Качество: ", TelegramMenus.ChoiceQualityArtefactToGraph(data[1], data[2]));
+                        }
+                        else
+                        {
+                            await TelegramBotApp.SendImage(callBack.From.Id, "График:", $"{AppConfig.WayGraphs}\\{data[1]}\\{data[2]}.png");
+                        }
+                    }
+                        break;
+                case "ОтпГрафАрт":
+                    await TelegramBotApp.SendMessenge(callBack.From.Id, "Потенциал: ", TelegramMenus.ChoicePottentialArtefactToGraph(data[1], data[2], data[3]));
+                    break;
+                case "ОтпГрафАртПот":
+                    await TelegramBotApp.SendImage(callBack.From.Id, "График:", $"{AppConfig.WayGraphs}\\{data[1]}\\q{data[2]}p{data[3]}\\{data[4]}.png");
+                    break;
+                case "Настройки":
+                    using (var context = new ApplicationDbContext())
+                    {
+                        var user = context.Users.Include(x => x.UserTelegram).Include(x => x.UserConfig).Where(x => x.UserTelegram.ChatId == callBack.From.Id).FirstOrDefault();
+                        switch (data[1])
+                        {
+                            case "Граф":
+                                user.UserConfig.ShowGraph = !user.UserConfig.ShowGraph;
+                                context.SaveChanges();
+                                break;
+                            case "Арт":
+                                user.UserConfig.ShowArt = !user.UserConfig.ShowArt;
+                                context.SaveChanges();  
+                                break;
+                        }
+                    }
+                    botClient.EditMessageReplyMarkupAsync(callBack.From.Id, callBack.Message.MessageId, replyMarkup: (InlineKeyboardMarkup)TelegramMenus.UserSetting(callBack.From.Id));
                     break;
                 case "Отмена":
                     await botClient.DeleteMessageAsync(callBack.From.Id, callBack.Message.MessageId);
@@ -285,6 +342,10 @@ namespace StalNoteM.Application
                 case "Жалобы/Предложения":
                     await botClient.SendTextMessageAsync(msg.Chat.Id, "Писать https://t.me/NiRGEsFY");
                     break;
+                case "Настройки ищеек":
+                    await botClient.SendTextMessageAsync(msg.Chat.Id, "Настройки", replyMarkup: TelegramMenus.UserSetting(msg.Chat.Id));
+                    break;
+
                 default:
 
                     break;
@@ -311,12 +372,11 @@ namespace StalNoteM.Application
                 }
                 else
                 {
-                    foreach (var item in bd.Users.Where(x=>x.Id == 10026).Include(x=>x.UserItems).First().UserItems.Where(x=>x.Quality == 0).Select(x=>x.Name))
+                    foreach (var item in bd.Users.Where(x=>x.Id == 10026).Include(x=>x.UserItems).First().UserItems.Where(x=>x.Quality == 0 && x.Pottential == 0))
                     {
-                        if (item.ToUpper().Contains(context))
+                        if (item.Name.ToUpper().Contains(context))
                         {
-                            var tempItem = bd.SqlItems.Where(x => x.Name == item).First();
-                            newItem.Add(new UserItem() { Name = tempItem.Name, ItemId = tempItem.ItemId });
+                            newItem.Add(new UserItem() { Name = item.Name, ItemId = item.ItemId });
                         }
                     }
                 }
@@ -436,12 +496,12 @@ namespace StalNoteM.Application
                 }
             }
         }
-        public async static Task<Message> SendMessenge(long chatId,string messenge)
+        public async static Task<Message> SendMessenge(long chatId,string messenge, IReplyMarkup replyMarkup = null)
         {
 
             try
             {
-            return await telegramBotClient.SendTextMessageAsync(chatId, messenge);
+            return await telegramBotClient.SendTextMessageAsync(chatId, messenge,replyMarkup: replyMarkup);
             }
             catch (Exception ex)
             {
@@ -465,16 +525,54 @@ namespace StalNoteM.Application
                 return null;
             }
         }
+        public async static Task<Message> SendImage(long chatId, string messenge, FileStream stream, IReplyMarkup replyMarkup = null)
+        {
+            try
+            {
+                Message msg = await telegramBotClient.SendPhotoAsync(
+                    chatId: chatId,
+                    photo: InputFile.FromStream(stream),
+                    caption: messenge,
+                    replyMarkup: replyMarkup
+                    );
+                return msg;
+            }
+            catch (Exception ex)
+            {
+                var test = ex.ToString();
+                if (ex.Message == "Forbidden: bot was blocked by the user")
+                {
+                    using (var context = new ApplicationDbContext())
+                    {
+                        /*
+                        var user = context.Users.Where(x => x.ChatId == chatId).Include(x => x.UserAccessToken).First();
+                        context.UserItems.RemoveRange(context.UserItems.Where(x => x.UserId == user.Id));
+                        UserAccessToken tempData = user.UserAccessToken;
+                        context.Users.Remove(user.UserAccessToken);
+                        context.Users.Remove(user);
+                        context.SaveChanges();
+                        context.Users.Add(tempData);
+                        context.SaveChanges();
+                        */
+                    }
+                }
+                return null;
+            }
+        }
         public async static Task<Message> SendImage(long chatId,string messenge,string wayImg, IReplyMarkup replyMarkup = null)
         {
             try
             {
-                FileStream stream = new FileStream(wayImg, FileMode.Open);
-                return await telegramBotClient.SendPhotoAsync(
+                using (FileStream stream = new FileStream(wayImg, FileMode.Open, FileAccess.Read, FileShare.None))
+                {
+                    Message msg = await telegramBotClient.SendPhotoAsync(
                     chatId: chatId,
                     photo: InputFile.FromStream(stream),
-                    caption: messenge
+                    caption: messenge,
+                    replyMarkup: replyMarkup
                     );
+                    return msg;
+                }
             }
             catch (Exception ex)
             {

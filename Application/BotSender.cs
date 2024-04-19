@@ -22,171 +22,175 @@ namespace StalNoteM.Application
                 InputItemInAuction();
                 using (var context = new ApplicationDbContext())
                 {
-                    try
+                    using (var adds = new AdvertisingWorker())
                     {
-                        var sw = new Stopwatch();
-                        sw.Start();
-                        List<AucItem> items = context.AucItems.Where(x => x.StartTime > DateTime.Now.AddHours(-3).AddMinutes(-2) && x.State == false).ToList();
-                        List<AucItem> removeItems = new List<AucItem>();
-                        foreach (var item in items)
+                        try
                         {
-                            if (context.SqlItems.Where(x=>x.ItemId == item.ItemId && x.Pottential == item.Pottential && x.Quality == item.Quality)
-                                                .FirstOrDefault().MinBuyPrice < item.BuyoutPrice || item.BuyoutPrice == 0)
+                            var sw = new Stopwatch();
+                            sw.Start();
+                            List<AucItem> items = context.AucItems.Where(x => x.StartTime > DateTime.Now.AddHours(-3).AddMinutes(-2) && x.State == false).ToList();
+                            List<AucItem> removeItems = new List<AucItem>();
+                            foreach (var item in items)
                             {
-                                removeItems.Add(item);
-                            }
-                            context.AucItems.Where(x => x == item).FirstOrDefault().State = true;
-                        }
-                        context.SaveChanges();
-                        foreach (var item in removeItems)
-                        {
-                            items.Remove(item);
-                        }
-                        foreach (var item in items)
-                        {
-                            List<Data.Users.User> users = new List<Data.Users.User>();
-                            long averagePrice = context.SqlItems.Where(x => x.ItemId == item.ItemId
-                                                                         && x.Quality == item.Quality
-                                                                         && x.Pottential == item.Pottential).First().AveragePrice;
-                            long minBuyPrice = (long)(averagePrice * 0.92);
-                            if (item.BuyoutPrice > minBuyPrice || (minBuyPrice == 0 || averagePrice == 0))
-                            {
-                                continue;
-                            }
-                            users.AddRange(context.Users
-                                .Include(x => x.UserItems)
-                                .Include(x => x.Role)
-                                .Include(x=>x.UserTelegram)
-                                .Where(x => x.UserItems
-                                .Where(x=>x.Quality == item.Quality)
-                                .Where(y => y.ItemId == item.ItemId && ((y.Price > item.BuyoutPrice) || (y.Price <= 0)))
-                                .First().ItemId == item.ItemId));
-                            long maxSellPrice = (long)(averagePrice * 1.025);
-                            int countSelledItemHighPrices = context.SelledItems.Where(x => x.ItemId == item.ItemId)
-                                                                               .Where(x=>x.Time >= DateTime.Now.AddHours(-3).AddDays(-2))
-                                                                               .Where(x => x.Price >= maxSellPrice).Count();
-                            foreach (var user in users)
-                            {
-                                string name = item.TakeName();
-                                if (context.SqlItems.Where(x=>x.ItemId == item.ItemId).FirstOrDefault().Type.Contains("artefact"))
+                                if ((context.SqlItems.Where(x => x.ItemId == item.ItemId && x.Pottential == item.Pottential && x.Quality == item.Quality)
+                                                    .FirstOrDefault().MinBuyPrice) < item.BuyoutPrice || item.BuyoutPrice == 0)
                                 {
-                                    switch (user.Role.Name)
-                                    {
-                                        case "Новичек":
-                                            TelegramBotApp.SendImage(user.UserTelegram.ChatId,
-                                            $"{name}\n" + $"Продается по {item.BuyoutPrice}\n",
-                                            $"{AppConfig.WayGraphs}\\{item.ItemId}\\q{item.Quality}p{item.Pottential}\\24.png");
-                                            break;
-                                        case "Бывалый":
-                                            TelegramBotApp.SendImage(user.UserTelegram.ChatId,
-                                            $"{name}\n" + $"Продается по {item.BuyoutPrice}\n"
-                                            + $"Время появления лота на аукционе: {item.StartTime.Value.AddHours(3)}\n",
-                                            $"{AppConfig.WayGraphs}\\{item.ItemId}\\q{item.Quality}p{item.Pottential}\\24.png");
-                                            break;
-                                        case "Опытный":
-                                            TelegramBotApp.SendImage(user.UserTelegram.ChatId,
-                                            $"{name}\n" + $"Продается по {item.BuyoutPrice}\n"
-                                            + $"Средняя цена примерно: {averagePrice}\n"
-                                            + $"Время появления лота на аукционе: {item.StartTime.Value.AddHours(3)}\n",
-                                            $"{AppConfig.WayGraphs}\\{item.ItemId}\\q{item.Quality}p{item.Pottential}\\24.png");
-                                            break;
-                                        case "Ветеран":
-                                            TelegramBotApp.SendImage(user.UserTelegram.ChatId,
-                                            $"{name}\n" + $"Продается по {item.BuyoutPrice}\n"
-                                            + $"Средняя цена примерно: {averagePrice}\n"
-                                            + $"Можно продать примерно за: {maxSellPrice}\n"
-                                            + $"Время появления лота на аукционе: {item.StartTime.Value.AddHours(3)}\n",
-                                            $"{AppConfig.WayGraphs}\\{item.ItemId}\\q{item.Quality}p{item.Pottential}\\48.png");
-                                            break;
-                                        case "Мастер":
-                                            TelegramBotApp.SendImage(user.UserTelegram.ChatId,
-                                            $"{name}\n" + $"Продается по {item.BuyoutPrice}\n"
-                                            + $"Средняя цена примерно: {averagePrice}\n"
-                                            + $"Можно продать примерно за: {maxSellPrice}\n"
-                                            + $"Примерна прибыль составит: {(maxSellPrice * 0.95) - item.BuyoutPrice}\n"
-                                            + $"Время появления лота на аукционе: {item.StartTime.Value.AddHours(3)}\n",
-                                            $"{AppConfig.WayGraphs}\\{item.ItemId}\\q{item.Quality}p{item.Pottential}\\48.png");
-                                            break;
-                                        case "Легенда":
-                                        case "Разработчик":
-                                            TelegramBotApp.SendImage(user.UserTelegram.ChatId,
-                                            $"{name}\n" + $"Продается по {item.BuyoutPrice}\n"
-                                            + $"Средняя цена примерно: {averagePrice}\n"
-                                            + $"Можно продать примерно за: {maxSellPrice}\n"
-                                            + $"Количество проданных вещей за 2 дня выше предложенной: {countSelledItemHighPrices}\n"
-                                            + $"Примерна прибыль составит: {(maxSellPrice * 0.95) - item.BuyoutPrice}\n"
-                                            + $"Время появления лота на аукционе: {item.StartTime.Value.AddHours(3)}\n",
-                                            $"{AppConfig.WayGraphs}\\{item.ItemId}\\q{item.Quality}p{item.Pottential}\\48.png");
-                                            break;
-                                    }
+                                    removeItems.Add(item);
+                                }
+                                context.AucItems.Where(x => x == item).FirstOrDefault().State = true;
+                            }
+                            context.SaveChanges();
+                            foreach (var item in removeItems)
+                            {
+                                items.Remove(item);
+                            }
+                            foreach (var item in items)
+                            {
+                                bool isArtefact = context.SqlItems.Where(x => x.ItemId == item.ItemId).FirstOrDefault().Type.Contains("artefact");
+                                List<Data.Users.User> users = new List<Data.Users.User>();
+                                long averagePrice = context.SqlItems.Where(x => x.ItemId == item.ItemId
+                                                                             && x.Quality == item.Quality
+                                                                             && x.Pottential == item.Pottential).First().AveragePrice;
+                                long minBuyPrice = (long)(averagePrice * 0.92);
+                                if (item.BuyoutPrice / item.Ammount > minBuyPrice || (minBuyPrice == 0 || averagePrice == 0))
+                                {
+                                    continue;
+                                }
+                                if (isArtefact)
+                                {
+                                    users.AddRange(context.Users
+                                         .Include(x => x.UserItems)
+                                         .Include(x => x.Role)
+                                         .Include(x => x.UserTelegram)
+                                         .Include(x => x.UserConfig)
+                                         .Where(x => x.UserConfig.ShowArt == true)
+                                         .Where(x => x.UserItems
+                                         .Where(x => x.Quality == item.Quality)
+                                         .Where(y => y.ItemId == item.ItemId && ((y.Price > item.BuyoutPrice / item.Ammount) || (y.Price <= 0)))
+                                         .First().ItemId == item.ItemId));
                                 }
                                 else
                                 {
-                                    switch (user.Role.Name)
+                                    users.AddRange(context.Users
+                                         .Include(x => x.UserItems)
+                                         .Include(x => x.Role)
+                                         .Include(x => x.UserTelegram)
+                                         .Include(x => x.UserConfig)
+                                         .Where(x => x.UserItems
+                                         .Where(x => x.Quality == item.Quality)
+                                         .Where(y => y.ItemId == item.ItemId && ((y.Price > item.BuyoutPrice / item.Ammount) || (y.Price <= 0)))
+                                         .First().ItemId == item.ItemId));
+                                }
+                                long maxSellPrice = (long)(averagePrice * 1.025);
+                                int countSelledItemHighPrices = context.SelledItems.Where(x => x.ItemId == item.ItemId)
+                                                                                   .Where(x => x.Time >= DateTime.Now.AddHours(-3).AddDays(-2))
+                                                                                   .Where(x => x.Price >= maxSellPrice).Count();
+                                foreach (var user in users)
+                                {
+                                    if (isArtefact)
                                     {
-                                        case "Новичек":
-                                            TelegramBotApp.SendImage(user.UserTelegram.ChatId,
-                                            $"{name}\n" + $"Продается по {item.BuyoutPrice}\n",
-                                            $"{AppConfig.WayGraphs}\\{item.ItemId}\\24.png");
-                                            break;
-                                        case "Бывалый":
-                                            TelegramBotApp.SendImage(user.UserTelegram.ChatId,
-                                            $"{name}\n" + $"Продается по {item.BuyoutPrice}\n"
-                                            + $"Время появления лота на аукционе: {item.StartTime.Value.AddHours(3)}\n",
-                                            $"{AppConfig.WayGraphs}\\{item.ItemId}\\24.png");
-                                            break;
-                                        case "Опытный":
-                                            TelegramBotApp.SendImage(user.UserTelegram.ChatId,
-                                            $"{name}\n" + $"Продается по {item.BuyoutPrice}\n"
-                                            + $"Средняя цена примерно: {averagePrice}\n"
-                                            + $"Время появления лота на аукционе: {item.StartTime.Value.AddHours(3)}\n",
-                                            $"{AppConfig.WayGraphs}\\{item.ItemId}\\24.png");
-                                            break;
-                                        case "Ветеран":
-                                            TelegramBotApp.SendImage(user.UserTelegram.ChatId,
-                                            $"{name}\n" + $"Продается по {item.BuyoutPrice}\n"
-                                            + $"Средняя цена примерно: {averagePrice}\n"
-                                            + $"Можно продать примерно за: {maxSellPrice}\n"
-                                            + $"Время появления лота на аукционе: {item.StartTime.Value.AddHours(3)}\n",
-                                            $"{AppConfig.WayGraphs}\\{item.ItemId}\\48.png");
-                                            break;
-                                        case "Мастер":
-                                            TelegramBotApp.SendImage(user.UserTelegram.ChatId,
-                                            $"{name}\n" + $"Продается по {item.BuyoutPrice}\n"
-                                            + $"Средняя цена примерно: {averagePrice}\n"
-                                            + $"Можно продать примерно за: {maxSellPrice}\n"
-                                            + $"Примерна прибыль составит: {(maxSellPrice * 0.95) - item.BuyoutPrice}\n"
-                                            + $"Время появления лота на аукционе: {item.StartTime.Value.AddHours(3)}\n",
-                                            $"{AppConfig.WayGraphs}\\{item.ItemId}\\72.png");
-                                            break;
-                                        case "Легенда":
-                                        case "Разработчик":
-                                            TelegramBotApp.SendImage(user.UserTelegram.ChatId,
-                                            $"{name}\n" + $"Продается по {item.BuyoutPrice}\n"
-                                            + $"Средняя цена примерно: {averagePrice}\n"
-                                            + $"Можно продать примерно за: {maxSellPrice}\n"
-                                            + $"Количество проданных вещей за 2 дня выше предложенной: {countSelledItemHighPrices}\n"
-                                            + $"Примерна прибыль составит: {(maxSellPrice * 0.95) - item.BuyoutPrice}\n"
-                                            + $"Время появления лота на аукционе: {item.StartTime.Value.AddHours(3)}\n",
-                                            $"{AppConfig.WayGraphs}\\{item.ItemId}\\72.png");
-                                            break;
+                                        using (FileStream stream = new FileStream($"{AppConfig.WayGraphs}\\{item.ItemId}\\q{item.Quality}p{item.Pottential}\\48.png",FileMode.Open, FileAccess.Read, FileShare.Inheritable))
+                                        {
+                                            string name = item.TakeName();
+                                            string messenge = $"{name}\n";
+                                            if (item.Ammount > 1)
+                                                messenge += $"Количество: {item.Ammount}\n";
+
+                                            messenge += $"Продаеться за {item.BuyoutPrice}\n";
+
+                                            switch (user.Role.Name)
+                                            {
+                                                case "Бывалый":
+                                                case "Опытный":
+                                                case "Ветеран":
+                                                    messenge += $"Средняя цена примерно: {averagePrice}\n" +
+                                                                $"Можно продать примерно за: {maxSellPrice}\n" +
+                                                                $"Время появления лота на аукционе: {item.StartTime.Value.AddHours(3)}\n" +
+                                                                $"{adds.TakeAdd()}\n";
+                                                    break;
+                                                case "Мастер":
+                                                case "Легенда":
+                                                case "Разработчик":
+                                                    messenge += $"Средняя цена примерно: {averagePrice}\n" +
+                                                                $"Можно продать примерно за: {maxSellPrice}\n" +
+                                                                $"Примерная прибыль составит: {(maxSellPrice * 0.95) - item.BuyoutPrice}\n" +
+                                                                $"Количество проданных вещей за 2 дня выше предложенной: {countSelledItemHighPrices}\n" +
+                                                                $"Время появления лота на аукционе: {item.StartTime.Value.AddHours(3)}\n";
+                                                    break;
+                                                default:
+                                                    messenge += $"{adds.TakeAdd()}\n";
+                                                    break;
+                                            }
+                                            if (user.UserConfig.ShowGraph)
+                                            {
+                                                await TelegramBotApp.SendImage(user.UserTelegram.ChatId, messenge, stream);
+                                            }
+                                            else
+                                            {
+                                                TelegramBotApp.SendMessenge(user.UserTelegram.ChatId, messenge, TelegramMenus.ShowGraph(item.ItemId, 48, item.Quality ?? 0, item.Pottential ?? 0));
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        using (FileStream stream = new FileStream($"{AppConfig.WayGraphs}\\{item.ItemId}\\48.png", FileMode.Open, FileAccess.Read, FileShare.None))
+                                        {
+                                            string name = item.TakeName();
+                                            string messenge = $"{name}\n";
+                                            if (item.Ammount > 1)
+                                                messenge += $"Количество: {item.Ammount}\n";
+
+                                            messenge += $"Продаеться за {item.BuyoutPrice}\n";
+
+                                            switch (user.Role.Name)
+                                            {
+                                                case "Бывалый":
+                                                case "Опытный":
+                                                case "Ветеран":
+                                                    messenge += $"Средняя цена примерно: {averagePrice}\n" +
+                                                                $"Можно продать примерно за: {maxSellPrice}\n" +
+                                                                $"Время появления лота на аукционе: {item.StartTime.Value.AddHours(3)}\n" +
+                                                                $"{adds.TakeAdd()}\n";
+                                                    break;
+                                                case "Мастер":
+                                                case "Легенда":
+                                                case "Разработчик":
+                                                    messenge += $"Средняя цена примерно: {averagePrice}\n" +
+                                                                $"Можно продать примерно за: {maxSellPrice}\n" +
+                                                                $"Примерная прибыль составит: {(maxSellPrice * 0.95) - item.BuyoutPrice}\n" +
+                                                                $"Количество проданных вещей за 2 дня выше предложенной: {countSelledItemHighPrices}\n" +
+                                                                $"Время появления лота на аукционе: {item.StartTime.Value.AddHours(3)}\n";
+                                                    break;
+                                                default:
+                                                    messenge += $"{adds.TakeAdd()}\n";
+                                                    break;
+                                            }
+                                            if (user.UserConfig.ShowGraph)
+                                            {
+                                                TelegramBotApp.SendImage(user.UserTelegram.ChatId, messenge, stream);
+                                            }
+                                            else
+                                            {
+                                                TelegramBotApp.SendMessenge(user.UserTelegram.ChatId, messenge, TelegramMenus.ShowGraph(item.ItemId, 48, item.Quality ?? 0, item.Pottential ?? 0));
+                                            }
+                                        }
                                     }
                                 }
                             }
+                            context.SaveChanges();
+                            sw.Stop();
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.WriteLine($"Отправка сообщений успешно завершена\n" +
+                                              $"За {sw.ElapsedMilliseconds} мил сек\n");
+                            Console.ForegroundColor = ConsoleColor.White;
                         }
-                        context.SaveChanges();
-                        sw.Stop();
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine($"Отправка сообщений успешно завершена\n" +
-                                          $"За {sw.ElapsedMilliseconds} мил сек\n");
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
 
-                    catch (Exception ex)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine($"Ошибка отправки сообщений {ex}");
-                        Console.ForegroundColor = ConsoleColor.White;
+                        catch (Exception ex)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine($"Ошибка отправки сообщений {ex}");
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
                     }
                 }
             }
@@ -432,7 +436,7 @@ namespace StalNoteM.Application
                 {
                     try
                     {
-                        IQueryable<SelledItem> searcherItem;
+                        List<SelledItem> searcherItem;
                         IQueryable<SelledItem> searcherItemCount = context.SelledItems
                                             .Where(x => x.ItemId == item.ItemId)
                                             .Where(x => x.Quality == item.Quality && x.Pottential == item.Pottential)
@@ -453,17 +457,35 @@ namespace StalNoteM.Application
                         {
                             continue;
                         }
-                        long startPrice = (long)searcherItemTime
-                            .Where(x => x.Time < searcherItemTime.ToArray()[searcherItemTime.Count() / 3].Time)
+                        int tempTest = searcherItemTime.Count();
+                        switch (searcherItemTime.Count() % 3) 
+                        {
+                            case 1:
+                                searcherItem = searcherItemTime.ToList();
+                                searcherItem.Remove(searcherItemTime.Last());
+                                int tempTestFir = searcherItem.Count();
+                                break;
+                            case 2:
+                                searcherItem = searcherItemTime.ToList();
+                                searcherItem.RemoveRange(searcherItemTime.Count()-3, 2);
+                                int tempTestSec = searcherItem.Count();
+                                break;
+                            default:
+                                searcherItem = searcherItemTime.ToList();
+                                break;
+                        }
+
+                        long startPrice = (long)searcherItem
+                            .Where(x => x.Time < searcherItem.ToArray()[searcherItem.Count() / 3].Time)
                             .Select(x => x.Price / x.Amount)
                             .Average();
-                        long middlePrice = (long)searcherItemTime
-                            .Where(x => x.Time > searcherItemTime.ToArray()[searcherItemTime.Count() / 3].Time
-                                     && x.Time < searcherItemTime.ToArray()[searcherItemTime.Count() * 2 / 3].Time)
+                        long middlePrice = (long)searcherItem
+                            .Where(x => x.Time > searcherItem.ToArray()[searcherItem.Count() / 3].Time
+                                     && x.Time < searcherItem.ToArray()[searcherItem.Count() * 2 / 3].Time)
                             .Select(x => x.Price / x.Amount)
                             .Average();
-                        long endPrice = (long)searcherItemTime
-                            .Where(x => x.Time > searcherItemTime.ToArray()[(searcherItemTime.Count() * 2 / 3)].Time)
+                        long endPrice = (long)searcherItem
+                            .Where(x => x.Time > searcherItem.ToArray()[(searcherItem.Count() * 2 / 3)].Time)
                             .Select(x => x.Price / x.Amount)
                             .Average();
                         if ((startPrice > middlePrice && middlePrice > endPrice)
