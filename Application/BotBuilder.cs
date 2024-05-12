@@ -344,6 +344,17 @@ namespace StalNoteM.Application
         {
             using (var context = new ApplicationDbContext())
             {
+
+                if (false)
+                {
+                    context.Bullets.RemoveRange(context.Bullets);
+                    context.WeaponsItems.RemoveRange(context.WeaponsItems);
+                    context.ArmorsItems.RemoveRange(context.ArmorsItems);
+                    context.ArtefactItems.RemoveRange(context.ArtefactItems);
+                    context.CaseItems.RemoveRange(context.CaseItems);
+                    context.SaveChanges();
+                }
+
                 string WayItems = $"{AppConfig.WayItems}\\armor";
                 if (context.ArmorsItems == null || context.ArmorsItems.Count() == 0)
                 {
@@ -424,6 +435,7 @@ namespace StalNoteM.Application
                     }
                 }
 
+                
                 WayItems = $"{AppConfig.WayItems}\\weapon";
                 if (context.WeaponsItems == null || context.WeaponsItems.Count() == 0)
                 {
@@ -469,6 +481,7 @@ namespace StalNoteM.Application
                     }
                 }
 
+                
                 WayItems = $"{AppConfig.WayItems}\\bullet";
                 if (context.Bullets == null || context.Bullets.Count() == 0)
                 {

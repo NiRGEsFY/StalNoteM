@@ -82,7 +82,7 @@ namespace StalNoteM.Data.DataItem
             }
             else if (item.Name.Lines.Ru.Contains("9х39"))
             {
-                AmmoType = "9х39";
+                AmmoType = "9x39";
                 return;
             }
             else if (item.Name.Lines.Ru.Contains("5.45"))

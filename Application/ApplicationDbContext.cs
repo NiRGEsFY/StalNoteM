@@ -30,6 +30,8 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<CaseItem> CaseItems { get; set; }
     public virtual DbSet<ArtefactItem> ArtefactItems { get; set; }
 
+    public virtual DbSet<UserCase> UserCases { get; set; }
+
     public virtual DbSet<User> Users { get; set; }
     public virtual DbSet<Advertising> Advertisings { get; set; }
     public virtual DbSet<UserItem> UserItems { get; set; }

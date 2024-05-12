@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StalNoteM;
 
@@ -11,9 +12,11 @@ using StalNoteM;
 namespace StalNoteM.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240419105227_6_1_mig")]
+    partial class _6_1_mig
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -934,10 +937,6 @@ namespace StalNoteM.Migrations
                     b.Property<int>("CaseItemId")
                         .HasColumnType("int");
 
-                    b.Property<string>("FifthArtefactAddition")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
-
                     b.Property<int?>("FifthArtefactId")
                         .HasColumnType("int");
 
@@ -946,10 +945,6 @@ namespace StalNoteM.Migrations
 
                     b.Property<int?>("FifthArtefactQuality")
                         .HasColumnType("int");
-
-                    b.Property<string>("FirstArtefactAddition")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
 
                     b.Property<int?>("FirstArtefactId")
                         .HasColumnType("int");
@@ -960,10 +955,6 @@ namespace StalNoteM.Migrations
                     b.Property<int?>("FirstArtefactQuality")
                         .HasColumnType("int");
 
-                    b.Property<string>("ForthArtefactAddition")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
-
                     b.Property<int?>("ForthArtefactId")
                         .HasColumnType("int");
 
@@ -972,14 +963,6 @@ namespace StalNoteM.Migrations
 
                     b.Property<int?>("ForthArtefactQuality")
                         .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SecondArtefactAddition")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
 
                     b.Property<int?>("SecondArtefactId")
                         .HasColumnType("int");
@@ -990,10 +973,6 @@ namespace StalNoteM.Migrations
                     b.Property<int?>("SecondArtefactQuality")
                         .HasColumnType("int");
 
-                    b.Property<string>("SixthArtefactAddition")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
-
                     b.Property<int?>("SixthArtefactId")
                         .HasColumnType("int");
 
@@ -1002,10 +981,6 @@ namespace StalNoteM.Migrations
 
                     b.Property<int?>("SixthArtefactQuality")
                         .HasColumnType("int");
-
-                    b.Property<string>("ThirdArtefactAddition")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
 
                     b.Property<int?>("ThirdArtefactId")
                         .HasColumnType("int");

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StalNoteM;
 
@@ -11,9 +12,11 @@ using StalNoteM;
 namespace StalNoteM.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240419105127_6_0_mig")]
+    partial class _6_0_mig
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -934,86 +937,58 @@ namespace StalNoteM.Migrations
                     b.Property<int>("CaseItemId")
                         .HasColumnType("int");
 
-                    b.Property<string>("FifthArtefactAddition")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
-
                     b.Property<int?>("FifthArtefactId")
                         .HasColumnType("int");
 
-                    b.Property<double?>("FifthArtefactPercent")
+                    b.Property<double>("FifthArtefactPercent")
                         .HasColumnType("float");
 
-                    b.Property<int?>("FifthArtefactQuality")
+                    b.Property<int>("FifthArtefactQuality")
                         .HasColumnType("int");
-
-                    b.Property<string>("FirstArtefactAddition")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
 
                     b.Property<int?>("FirstArtefactId")
                         .HasColumnType("int");
 
-                    b.Property<double?>("FirstArtefactPercent")
+                    b.Property<double>("FirstArtefactPercent")
                         .HasColumnType("float");
 
-                    b.Property<int?>("FirstArtefactQuality")
+                    b.Property<int>("FirstArtefactQuality")
                         .HasColumnType("int");
-
-                    b.Property<string>("ForthArtefactAddition")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
 
                     b.Property<int?>("ForthArtefactId")
                         .HasColumnType("int");
 
-                    b.Property<double?>("ForthArtefactPercent")
+                    b.Property<double>("ForthArtefactPercent")
                         .HasColumnType("float");
 
-                    b.Property<int?>("ForthArtefactQuality")
+                    b.Property<int>("ForthArtefactQuality")
                         .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SecondArtefactAddition")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
 
                     b.Property<int?>("SecondArtefactId")
                         .HasColumnType("int");
 
-                    b.Property<double?>("SecondArtefactPercent")
+                    b.Property<double>("SecondArtefactPercent")
                         .HasColumnType("float");
 
-                    b.Property<int?>("SecondArtefactQuality")
+                    b.Property<int>("SecondArtefactQuality")
                         .HasColumnType("int");
-
-                    b.Property<string>("SixthArtefactAddition")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
 
                     b.Property<int?>("SixthArtefactId")
                         .HasColumnType("int");
 
-                    b.Property<double?>("SixthArtefactPercent")
+                    b.Property<double>("SixthArtefactPercent")
                         .HasColumnType("float");
 
-                    b.Property<int?>("SixthArtefactQuality")
+                    b.Property<int>("SixthArtefactQuality")
                         .HasColumnType("int");
-
-                    b.Property<string>("ThirdArtefactAddition")
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
 
                     b.Property<int?>("ThirdArtefactId")
                         .HasColumnType("int");
 
-                    b.Property<double?>("ThirdArtefactPercent")
+                    b.Property<double>("ThirdArtefactPercent")
                         .HasColumnType("float");
 
-                    b.Property<int?>("ThirdArtefactQuality")
+                    b.Property<int>("ThirdArtefactQuality")
                         .HasColumnType("int");
 
                     b.HasKey("Id");

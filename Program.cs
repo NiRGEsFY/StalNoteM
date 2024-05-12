@@ -9,7 +9,7 @@ namespace StalNoteM
         {
             BotBuilder builder = new BotBuilder();
             await builder.InitialApp();
-            builder.StartBeagling(10000);
+            builder.StartBeagling(12000);
             Console.ReadLine();
             /*
             builder.sendMsgAllUsers(

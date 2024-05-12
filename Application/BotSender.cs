@@ -7,6 +7,7 @@ namespace StalNoteM.Application
 {
     public class BotSender
     {
+        private static int HistorySpliter = 0;
         private static bool lockerSendMsg = false;
         public static async void StartSend(object obj)
         {
@@ -318,10 +319,11 @@ namespace StalNoteM.Application
         }
         public static void InputItemInHistory()
         {
+            int spliter = 5;
             void InputItem(object input)
             {
                 string item = input.ToString();
-                var allLotByed = ServerRequester.TakeHistory(item, "ru", 100);
+                var allLotByed = ServerRequester.TakeHistory(item, "ru", 200);
                 var pieceOfLotByed = new List<SelledItem>();
                 DateTime? timeLastLotByedBase;
                 var addLotByed = new List<SelledItem>();
@@ -404,15 +406,17 @@ namespace StalNoteM.Application
             using (var context = new ApplicationDbContext())
             {
                 List<Thread> threads = new List<Thread>();
-                var itemFindArray = context.SqlItems.Where(x=>x.Finding == true).Select(x=>x.ItemId).Distinct().ToArray();
+                var itemFindArray = context.SqlItems.Where(x=>x.Pottential == 0).Select(x=>x.ItemId).Distinct().ToArray();
                 int maxLenght = itemFindArray.Length;
-                for (int i = 0; i < maxLenght; i++)
+                int spliteLenght = maxLenght / spliter;
+                Console.WriteLine($"{maxLenght} = {spliteLenght * HistorySpliter} -> {(spliteLenght * (HistorySpliter + 1))}");
+                for (int i = spliteLenght * HistorySpliter; i < (spliteLenght * (HistorySpliter + 1)); i++)
                 {
                     threads.Add(new Thread(InputItem));
                 }
-                for (int i = 0; i < maxLenght; i++)
+                for (int i = 0; i < spliteLenght; i++)
                 {
-                    Thread.Sleep(10);
+                    Thread.Sleep(250);
                     threads[i].Name = itemFindArray[i];
                     threads[i].Start(itemFindArray[i]);
                 }
@@ -423,10 +427,20 @@ namespace StalNoteM.Application
             }
             lockerSendMsg = true;
             sw.Stop();
+            Thread.Sleep(60000);
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"Добавление проданных предметов в базу данных в {DateTime.Now.ToShortTimeString()}\n" +
                               $"Добавление выполнено за {sw.ElapsedMilliseconds} мили секунд\n");
             Console.ForegroundColor = ConsoleColor.White;
+            
+            if (HistorySpliter >= 4)
+            {
+                HistorySpliter = 0;
+            }
+            else
+            {
+                HistorySpliter++;
+            }
         }
         public static void UpdateAveragePrice()
         {

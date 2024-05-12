@@ -32,7 +32,7 @@ namespace StalNoteM.Data.DataItem
                 switch (character.Name.Lines.Ru)
                 {
                     case null:
-                        AmmoType = JsonConvert.DeserializeObject<Data.DataItem.Key>(item.InfoBlocks[2].Elements[0].Value.ToString()).Lines.Ru;
+                        AmmoType = JsonConvert.DeserializeObject<Data.DataItem.Key>(item.InfoBlocks[2].Elements[0].Value.ToString()).Lines.Ru.Replace('х', 'x');
                         break;
                     case "Урон":
                         Damage = (double)character.Value;
