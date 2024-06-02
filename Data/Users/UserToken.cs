@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -7,6 +9,8 @@ using System.Threading.Tasks;
 
 namespace StalNoteM.Data.Users
 {
+
+    [PrimaryKey(nameof(Id))]
     public class UserToken
     {
         public int Id { get; set; }

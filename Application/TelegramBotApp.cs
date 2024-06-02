@@ -3,14 +3,24 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using StalNoteM.Data.Users;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using StalNoteM.Application;
 using StalNoteM.Data.DataItem;
 using Telegram.Bot.Requests;
+using System.Security.Cryptography.Xml;
+using Microsoft.VisualBasic;
 
 namespace StalNoteM.Application
 {
     public class TelegramBotApp
     {
+        private static UserManager<StalNoteM.Data.Users.User> _userManager;
+        private static RoleManager<Role> _roleManager;
+        private static SignInManager<StalNoteM.Data.Users.User> _signInManager;
+
+        private static List<string> allItemsName;
+
         static Dictionary<long, List<string>> DialogDepth;
         static Dictionary<long, Data.Users.UserItem> newUserItem;
         static TelegramBotClient client;
@@ -19,8 +29,12 @@ namespace StalNoteM.Application
         {
             return telegramBotClient;
         }
-        public async static Task Initial(string token)
+        public async static Task Initial(string token, UserManager<StalNoteM.Data.Users.User> userManager, RoleManager<Role> roleManager, SignInManager<StalNoteM.Data.Users.User> signInManager)
         {
+            _userManager = userManager;
+            _roleManager = roleManager;
+            _signInManager = signInManager;
+            //Start initial main components
             try
             {
                 DialogDepth = new Dictionary<long, List<string>>();
@@ -34,20 +48,51 @@ namespace StalNoteM.Application
                 await client.SetMyCommandsAsync(commandList);
                 client.StartReceiving(Update, Error);
                 telegramBotClient = client;
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Бот запущен\n");
-                Console.ForegroundColor = ConsoleColor.White;
+                BotBuilder.Succesed("Бот запущен\n");
             }
             catch(Exception ex)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Ошибка: " + ex.Message + "\n");
-                Console.ForegroundColor = ConsoleColor.White;
+                BotBuilder.Error("Ошибка инициализации блока TelegramBotApp.Main",ex);
+            }
+            //Start initial addition components
+            try
+            {
+                using (var context = new ApplicationDbContext())
+                {
+                    allItemsName = new List<string>();
+                    List<string> allUniqItemId = new List<string>();
+                    allUniqItemId = context.SelledItems.Where(x=>x.Pottential == 0 && x.Quality == 0).Select(x => x.ItemId).Distinct().ToList();
+                    foreach (var item in allUniqItemId)
+                    {
+                        allItemsName.AddRange(context.SqlItems.Where(x => x.Pottential == 0 && x.Quality == 0 && x.ItemId == item && x.Type != "grenade" && x.Type != "bullet" && x.Type != "medicine").Select(x => x.Name).ToList());
+                    }
+                }
+                BotBuilder.Succesed("Доп. данный загружены\n");
+            }
+            catch (Exception ex)
+            {
+                BotBuilder.Error("Ошибка инициализации блока TelegramBotApp.Addition", ex);
             }
         }
+
+        private static StalNoteM.Data.Users.User TakeUser(long telegramId)
+        {
+            using (var context = new ApplicationDbContext())
+            {
+                return (context.Users.Include(x=>x.UserItems).Include(x=>x.UserTelegram).Where(x=>x.UserTelegram.UserTelegramId == telegramId).FirstOrDefault());
+            }
+        }
+        private static StalNoteM.Data.Users.Role TakeRole(string roleName)
+        {
+            using (var context = new ApplicationDbContext())
+            {
+                return(context.Roles.Where(x => x.Name == roleName).FirstOrDefault());
+            }
+        }
+
         async static Task Update(ITelegramBotClient botClient, Update update, CancellationToken token)
         {
-            using (var Context = new ApplicationDbContext())
+            using (var context = new ApplicationDbContext())
             {
                 if (update.Type == Telegram.Bot.Types.Enums.UpdateType.CallbackQuery)
                 {
@@ -55,21 +100,65 @@ namespace StalNoteM.Application
                     return;
                 }
                 var msg = update?.Message;
-                if (msg != null)
+                if (msg != null && msg.From.Username != "StalNoteBot")
                 {
-                    if (Context.Users.Include(x=>x.UserTelegram).Where(x => x.UserTelegram.ChatId == msg.From.Id).Count() <= 0)
+                    if (context.Users.Include(x=>x.UserTelegram).Where(x => x.UserTelegram.UserTelegramId == msg.From.Id).Count() <= 0)
                     {
                         Data.Users.User newUser = new Data.Users.User();
+                        
                         newUser.UserTelegram.UserTelegramId = msg.From.Id;
                         newUser.UserTelegram.ChatId = msg.Chat.Id;
                         newUser.UserTelegram.UserName = msg.Chat.Username;
                         newUser.UserTelegram.FirstName = msg.Chat.FirstName;
                         newUser.UserTelegram.LastName = msg.Chat.LastName;
-                        newUser.Role = Context.Roles.Where(x => x.Name == "Новичек").First();
                         newUser.UserConfig = new UserConfig();
                         newUser.UserToken = new UserToken();
-                        await Context.Users.AddAsync(newUser);
-                        Context.SaveChanges();
+                        newUser.userToken = Guid.NewGuid();
+                        newUser.UserName = msg.Chat.Username ?? msg.Chat.FirstName ?? msg.Chat.LastName;
+
+                        using (var findLikeName = await _userManager.FindByNameAsync(newUser.UserName))
+                        {
+                            if (findLikeName != null)
+                            {
+                                newUser.UserName = $"{msg.Chat.Username ?? msg.Chat.FirstName ?? msg.Chat.LastName}#{newUser.UserTelegram.ChatId}";
+                            }
+                        }
+                        
+
+                        var result = await _userManager.CreateAsync(newUser,$"{newUser.UserName ?? 
+                                                            newUser.UserTelegram.UserName ??
+                                                            newUser.UserTelegram.FirstName ??
+                                                            newUser.UserTelegram.LastName}#{newUser.UserTelegram.ChatId}");
+
+                        if (result.Succeeded)
+                        {
+                            var pinMsg = await TelegramBotApp.SendMessenge(newUser.UserTelegram.ChatId, 
+                                                        "Пользователь успешно зарегистрирован \n" +
+                                                        $"Ваш логин: {newUser.UserName}\n" +
+                                                        $"Ваш пароль: {newUser.UserName ??
+                                                            newUser.UserTelegram.UserName ??
+                                                            newUser.UserTelegram.FirstName ??
+                                                            newUser.UserTelegram.LastName}#{newUser.UserTelegram.ChatId}\n");
+                            if (pinMsg != null)
+                            {
+                                TelegramBotApp.TakeBotClient().PinChatMessageAsync(newUser.UserTelegram.ChatId, pinMsg.MessageId);
+                            }
+                        }
+                        else
+                        {
+                            TelegramBotApp.SendMessenge(newUser.UserTelegram.ChatId,"Ошибка создания пользователя");
+                        }
+                        var user = await _userManager.FindByNameAsync(newUser.UserName);
+                        if (user != null)
+                        {
+                            var resultAdditionRole = await _userManager.AddToRoleAsync(user, "Новичек");
+                            if (resultAdditionRole.Succeeded)
+                            {
+                                TelegramBotApp.SendMessenge(newUser.UserTelegram.ChatId, "Пользователю добавлена роль: Новичек");
+                            }
+                            
+                        }
+                        
                     }
                     if (msg.Text != null)
                     {
@@ -82,6 +171,9 @@ namespace StalNoteM.Application
         {
             string[] data = callBack.Data.Split('|');
             string name;
+            Data.Users.User user;
+            IList<string> roles;
+            Data.Users.Role role;
             switch (data[0])
             {
                 case "ВывПрем":
@@ -201,9 +293,11 @@ namespace StalNoteM.Application
                     }
                     break;
                 case "ВыбВрем":
+                    user = TakeUser(callBack.From.Id);
+                    roles = await _userManager.GetRolesAsync(user);
                     await botClient.SendTextMessageAsync(callBack.From.Id,
                             "Выберите предмет:",
-                            replyMarkup: TelegramMenus.ChoiseItemTime(data[1], callBack.From.Id));
+                            replyMarkup: TelegramMenus.ChoiseItemTime(data[1], callBack.From.Id, roles.Last()));
                     break;
                 case "ВывГраф":
                     using (var context = new ApplicationDbContext())
@@ -242,7 +336,10 @@ namespace StalNoteM.Application
                 case "Настройки":
                     using (var context = new ApplicationDbContext())
                     {
-                        var user = context.Users.Include(x => x.UserTelegram).Include(x => x.UserConfig).Where(x => x.UserTelegram.ChatId == callBack.From.Id).FirstOrDefault();
+                        user = context.Users.Include(x => x.UserTelegram).Include(x => x.UserConfig).Where(x => x.UserTelegram.ChatId == callBack.From.Id).FirstOrDefault();
+                        roles = await _userManager.GetRolesAsync(user);
+                        role = TakeRole(roles.Last());
+
                         switch (data[1])
                         {
                             case "Граф":
@@ -255,7 +352,8 @@ namespace StalNoteM.Application
                                 break;
                         }
                     }
-                    botClient.EditMessageReplyMarkupAsync(callBack.From.Id, callBack.Message.MessageId, replyMarkup: (InlineKeyboardMarkup)TelegramMenus.UserSetting(callBack.From.Id));
+
+                    botClient.EditMessageReplyMarkupAsync(callBack.From.Id, callBack.Message.MessageId, replyMarkup: (InlineKeyboardMarkup)TelegramMenus.UserSetting(user, role));
                     break;
                 case "Отмена":
                     await botClient.DeleteMessageAsync(callBack.From.Id, callBack.Message.MessageId);
@@ -271,6 +369,8 @@ namespace StalNoteM.Application
                 return;
             }
             Data.Users.User user;
+            IList<string> roles;
+            Data.Users.Role role;
             switch (msg.Text)
             {
                 case "/start":
@@ -293,15 +393,20 @@ namespace StalNoteM.Application
                 case "Привилегии":
                     using (var context = new ApplicationDbContext())
                     {
-                        await botClient.SendTextMessageAsync(msg.Chat.Id, $"Ваша привелеги {context.Users.Include(x => x.UserTelegram).Where(x=>x.UserTelegram.ChatId == msg.Chat.Id).Include(x=>x.Role).First().Role.Name}\nПривелегии", replyMarkup: TelegramMenus.PremiumMenus());
+                    user = TakeUser(msg.Chat.Id);
+                    roles = await _userManager.GetRolesAsync(user);
+                    await botClient.SendTextMessageAsync(msg.Chat.Id, $"Ваша привилеги {roles.Last()}\nПривелегии", replyMarkup: TelegramMenus.PremiumMenus());
 
                     }
                     break;
                 case "Добавить ищейку":
                     using (ApplicationDbContext context = new ApplicationDbContext())
                     {
-                        user = context.Users.Include(x => x.UserTelegram).Where(x => x.UserTelegram.ChatId == msg.From.Id).Include(x => x.Role).First();
-                        if (user.Role.MaxLot > user.UserItems.Count)
+                        user = TakeUser(msg.Chat.Id);
+                        roles = await _userManager.GetRolesAsync(user);
+                        role = TakeRole(roles.Last());
+
+                        if (role.MaxLot > user.UserItems.Count)
                         {
                             await botClient.SendTextMessageAsync(msg.Chat.Id, "Введите название предмета:");
                             DialogDepth.Add(msg.From.Id, new List<string> { msg.Text });
@@ -343,9 +448,15 @@ namespace StalNoteM.Application
                     await botClient.SendTextMessageAsync(msg.Chat.Id, "Писать https://t.me/NiRGEsFY");
                     break;
                 case "Настройки ищеек":
-                    await botClient.SendTextMessageAsync(msg.Chat.Id, "Настройки", replyMarkup: TelegramMenus.UserSetting(msg.Chat.Id));
+                    using (var context = new ApplicationDbContext())
+                    {
+                        user = context.Users.Include(x => x.UserTelegram).Include(x => x.UserConfig).Where(x => x.UserTelegram.ChatId == msg.Chat.Id).FirstOrDefault();
+                        roles = await _userManager.GetRolesAsync(user);
+                        role = TakeRole(roles.Last());
+                    }
+                    await botClient.SendTextMessageAsync(msg.Chat.Id, "Настройки", replyMarkup: TelegramMenus.UserSetting(user, role));
                     break;
-
+                    
                 default:
 
                     break;
@@ -356,28 +467,14 @@ namespace StalNoteM.Application
             using (var bd = new ApplicationDbContext())
             {
                 List<UserItem> newItem = new List<UserItem>();
-                List<string> allItemsName = new List<string>();
-                allItemsName = bd.SqlItems.Select(x=>x.Name).Distinct().ToList();
                 context = context.ToUpper();
-                if (bd.Users.Include(x=>x.Role).Include(x => x.UserTelegram).Where(x=>x.UserTelegram.ChatId == chatId).First().Id == 10026)
+
+                foreach (var item in allItemsName)
                 {
-                    foreach (var item in allItemsName)
+                    if (item.ToUpper().Contains(context))
                     {
-                        if (item.ToUpper().Contains(context))
-                        {
-                            var tempItem = bd.SqlItems.Where(x => x.Name == item).First();
-                            newItem.Add(new UserItem() { Name = tempItem.Name, ItemId = tempItem.ItemId });
-                        }
-                    }
-                }
-                else
-                {
-                    foreach (var item in bd.Users.Where(x=>x.Id == 10026).Include(x=>x.UserItems).First().UserItems.Where(x=>x.Quality == 0 && x.Pottential == 0))
-                    {
-                        if (item.Name.ToUpper().Contains(context))
-                        {
-                            newItem.Add(new UserItem() { Name = item.Name, ItemId = item.ItemId });
-                        }
+                        var tempItem = bd.SqlItems.Where(x => x.Name == item).First();
+                        newItem.Add(new UserItem() { Name = tempItem.Name, ItemId = tempItem.ItemId });
                     }
                 }
                 return newItem;
@@ -390,14 +487,21 @@ namespace StalNoteM.Application
                 List<UserItem> newItems;
                 Data.Users.UserItem finallItem;
                 long tempCost;
+                Data.Users.User user;
+                IList<string> roles;
+                Data.Users.Role role;
                 switch (commandsList[commandsList.Count - 1])
                 {
                     case "Добавить ищейку":
 
                         using (var context = new ApplicationDbContext())
                         {
-                            var user = context.Users.Include(x => x.UserTelegram).Include(x=>x.UserItems).Include(x => x.Role).Where(x => x.UserTelegram.ChatId == msg.Chat.Id).First();
-                            if (user.UserItems.Count() + 1 > user.Role.MaxLot)
+                            
+                            user = TakeUser(msg.Chat.Id);
+                            roles = await _userManager.GetRolesAsync(user);
+                            role = TakeRole(roles.Last());
+
+                            if (user.UserItems.Count() + 1 > role.MaxLot)
                             {
                                 await botClient.SendTextMessageAsync(msg.Chat.Id, "Превышен лимит ищеек", replyMarkup: TelegramMenus.StartMenu());
                                 DialogDepth.Remove(msg.From.Id);

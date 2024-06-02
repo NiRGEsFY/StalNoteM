@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Bson;
 using StalNoteM.Data.AuctionItem;
 using System.Data;
 using System.Diagnostics;
@@ -9,18 +10,25 @@ namespace StalNoteM.Application
     {
         private static int HistorySpliter = 0;
         private static bool lockerSendMsg = false;
+        private static bool lockerInputAuc = true;
+        private static List<string> allFindingItem;
         public static async void StartSend(object obj)
         {
             AppConfig.CountMinuts += 1;
             if (AppConfig.CountMinuts == 1)
             {
-                InputItemInHistory();
-                UpdateAveragePrice();
+                allFindingItem = new List<string>();
+                UpdateInfoBlock();
                 return;
             }
             if ((AppConfig.CountMinuts % 30 != 0) && lockerSendMsg)
             {
-                InputItemInAuction();
+                if (lockerInputAuc)
+                {
+                    lockerInputAuc = false;
+                    await InputItemInAuction();
+                    lockerInputAuc = true;
+                }
                 using (var context = new ApplicationDbContext())
                 {
                     using (var adds = new AdvertisingWorker())
@@ -61,7 +69,6 @@ namespace StalNoteM.Application
                                 {
                                     users.AddRange(context.Users
                                          .Include(x => x.UserItems)
-                                         .Include(x => x.Role)
                                          .Include(x => x.UserTelegram)
                                          .Include(x => x.UserConfig)
                                          .Where(x => x.UserConfig.ShowArt == true)
@@ -74,7 +81,6 @@ namespace StalNoteM.Application
                                 {
                                     users.AddRange(context.Users
                                          .Include(x => x.UserItems)
-                                         .Include(x => x.Role)
                                          .Include(x => x.UserTelegram)
                                          .Include(x => x.UserConfig)
                                          .Where(x => x.UserItems
@@ -99,7 +105,8 @@ namespace StalNoteM.Application
 
                                             messenge += $"Продаеться за {item.BuyoutPrice}\n";
 
-                                            switch (user.Role.Name)
+                                            //Пофиксить как доработаю роли
+                                            switch ("Легенда")
                                             {
                                                 case "Бывалый":
                                                 case "Опытный":
@@ -143,7 +150,8 @@ namespace StalNoteM.Application
 
                                             messenge += $"Продаеться за {item.BuyoutPrice}\n";
 
-                                            switch (user.Role.Name)
+                                            //Пофиксить как доработаю роли
+                                            switch ("Легенда")
                                             {
                                                 case "Бывалый":
                                                 case "Опытный":
@@ -197,11 +205,10 @@ namespace StalNoteM.Application
             }
             else if(AppConfig.CountMinuts % 180 == 0 && AppConfig.CountMinuts != 0)
             {
-                InputItemInHistory();
-                UpdateAveragePrice();
+                UpdateInfoBlock();
             }
         }
-        public static void InputItemInAuction()
+        public async static Task InputItemInAuction()
         {
             void InputItem(object input)
             {
@@ -209,12 +216,7 @@ namespace StalNoteM.Application
                 var allLotInAuction = ServerRequester.TakeItem(item, "ru", 15);
                 if (allLotInAuction == null || allLotInAuction.Lots == null)
                 {
-                    using (var context = new ApplicationDbContext())
-                    {
-                        string itemName = context.SqlItems.Where(x => x.ItemId == item).First().Name;
-                        Console.WriteLine($"Ошибка запроса в товарах аукциона у {itemName}");
-                        return;
-                    }
+                    return;
                 }
                 var pieceOfLotInAuction = new List<AucItem>();
                 DateTime? timeLastLotInAucBase = null;
@@ -292,28 +294,37 @@ namespace StalNoteM.Application
             sw.Start();
             using (var context = new ApplicationDbContext())
             {
-                var allItemArray = context.SqlItems.Where(x => x.Finding == true).Select(x=>x.ItemId).Distinct().ToArray();
-                List<Thread> threads = new List<Thread>();
-                for (int i = 0; i < allItemArray.Length; i++)
+                if (allFindingItem.Count() > 0)
                 {
-                    threads.Add(new Thread(InputItem));
+                    List<Thread> threads = new List<Thread>();
+                    for (int i = 0; i < allFindingItem.Count(); i++)
+                    {
+                        threads.Add(new Thread(InputItem));
+                    }
+                    for (int i = 0; i < allFindingItem.Count(); i++)
+                    {
+                        Thread.Sleep(5);
+                        threads[i].Name = allFindingItem[i];
+                        threads[i].Start(allFindingItem[i]);
+                    }
+                    if (threads.Count > 0)
+                    {
+                        threads.Last().Join();
+                    }
                 }
-                for (int i = 0; i < allItemArray.Length; i++)
-                {
-                    Thread.Sleep(5);
-                    threads[i].Name = allItemArray[i];
-                    threads[i].Start(allItemArray[i]);
-                }
-                threads.Last().Join();
             }
             sw.Stop();
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"Добавленние предметов на аукционе в базу данных в {DateTime.Now.ToShortTimeString()}\n" +
                               $"Добавление выполнено за {sw.ElapsedMilliseconds} мили секунд");
             Console.ForegroundColor = ConsoleColor.White;
-            using (var context = new ApplicationDbContext())
+            await using (var context = new ApplicationDbContext())
             {
-                context.RemoveRange(context.AucItems.Where(x => x.StartTime < DateTime.Now.AddDays(-2).AddHours(-3)));
+                var removeOldItems = context.AucItems.Where(x => x.StartTime < DateTime.Now.AddDays(-2).AddHours(-3));
+                if (removeOldItems.Count() > 0)
+                {
+                    context.RemoveRange(removeOldItems);
+                }
                 context.SaveChanges();
             }
         }
@@ -409,16 +420,33 @@ namespace StalNoteM.Application
                 var itemFindArray = context.SqlItems.Where(x=>x.Pottential == 0).Select(x=>x.ItemId).Distinct().ToArray();
                 int maxLenght = itemFindArray.Length;
                 int spliteLenght = maxLenght / spliter;
-                Console.WriteLine($"{maxLenght} = {spliteLenght * HistorySpliter} -> {(spliteLenght * (HistorySpliter + 1))}");
-                for (int i = spliteLenght * HistorySpliter; i < (spliteLenght * (HistorySpliter + 1)); i++)
+
+                switch (HistorySpliter)
                 {
-                    threads.Add(new Thread(InputItem));
-                }
-                for (int i = 0; i < spliteLenght; i++)
-                {
-                    Thread.Sleep(250);
-                    threads[i].Name = itemFindArray[i];
-                    threads[i].Start(itemFindArray[i]);
+                    case 4:
+                        for (int i = spliteLenght * HistorySpliter; i < maxLenght; i++)
+                        {
+                            threads.Add(new Thread(InputItem));
+                        }
+                        for (int i = 0; i < maxLenght - (spliteLenght * HistorySpliter); i++)
+                        {
+                            Thread.Sleep(250);
+                            threads[i].Name = itemFindArray[i];
+                            threads[i].Start(itemFindArray[(spliteLenght * HistorySpliter) + i]);
+                        }
+                        break;
+                    default:
+                        for (int i = spliteLenght * HistorySpliter; i < (spliteLenght * (HistorySpliter + 1)) + 10; i++)
+                        {
+                            threads.Add(new Thread(InputItem));
+                        }
+                        for (int i = 0; i < spliteLenght + 10; i++)
+                        {
+                            Thread.Sleep(250);
+                            threads[i].Name = itemFindArray[i];
+                            threads[i].Start(itemFindArray[(spliteLenght * HistorySpliter) + i]);
+                        }
+                        break;
                 }
                 if (threads.Count() > 0)
                 {
@@ -535,10 +563,42 @@ namespace StalNoteM.Application
                     }
                     catch
                     {
-                        BotBuilder.Error($"Ошибка вычисления средней цены {item.Name}");
+                        
                     }
                 }
                 context.SaveChanges();
+            }
+        }
+
+        public static void UpdateInfoBlock()
+        {
+            try
+            {
+                InputItemInHistory();
+            }
+            catch (Exception ex)
+            {
+                BotBuilder.Error("Ошибка запроса всех предметов в истории", ex);
+            }
+            try
+            {
+                using (var context = new ApplicationDbContext())
+                {
+                    allFindingItem = context.SqlItems.Where(x => x.Finding == true).Select(x => x.ItemId).Distinct().ToList();
+                }
+            }
+            catch(Exception ex)
+            {
+                BotBuilder.Error("Ошибка запроса всех предметов в поиске", ex);
+            }
+
+            try
+            {
+                UpdateAveragePrice();
+            }
+            catch (Exception ex)
+            {
+                BotBuilder.Error("Ошибка обновления средней  цены", ex);
             }
         }
     }

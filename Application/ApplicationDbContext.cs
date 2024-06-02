@@ -3,10 +3,12 @@ using StalNoteM.Data.Users;
 using StalNoteM.Data.DataItem;
 using StalNoteM.Data.Other;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace StalNoteM;
 
-public partial class ApplicationDbContext : DbContext
+public partial class ApplicationDbContext : IdentityDbContext<User,Role, long>
 {
     public ApplicationDbContext()
     {
@@ -38,10 +40,14 @@ public partial class ApplicationDbContext : DbContext
     public virtual DbSet<UserToken> UserTokens { get; set; }
     public virtual DbSet<UserTelegram> UserTelegrams { get; set; }  
 
+
+
+
+
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
         options.UseSqlServer(
-            "data source=(localdb)\\MSSQLLocalDB;Initial Catalog=Stalcraft2;Integrated Security=True;MultipleActiveResultSets=True;"
+            "data source=(localdb)\\MSSQLLocalDB;Initial Catalog=Stalcraft2;Integrated Security=True;MultipleActiveResultSets=True;Connection Timeout=3600;"
             );
     }
     protected override void OnModelCreating(ModelBuilder modelBuilder)

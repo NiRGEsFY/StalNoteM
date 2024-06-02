@@ -1,4 +1,5 @@
-﻿using StalNoteM.Data.DataItem;
+﻿using Microsoft.EntityFrameworkCore;
+using StalNoteM.Data.DataItem;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -8,6 +9,8 @@ using System.Threading.Tasks;
 
 namespace StalNoteM.Data.Users
 {
+
+    [PrimaryKey(nameof(Id))]
     public class UserCase
     {
         [Display(Name = "Id")]

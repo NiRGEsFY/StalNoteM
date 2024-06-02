@@ -1,12 +1,15 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace StalNoteM.Data.Users;
 
-public class Role : IdentityRole<Guid>
+
+[PrimaryKey(nameof(Id))]
+public class Role : IdentityRole<long>
 {
-    [Key]
-    public long Id { get; set; }
+    public override long Id { get; set; }
     [Required]
     [Display(Name = "Название роли")]
     [MaxLength(50)]
@@ -18,14 +21,9 @@ public class Role : IdentityRole<Guid>
     [Display(Name = "Макс. лоты")]
     public int MaxLot { get; set; }
     [Required]
-    [Display(Name="Макс. сборки")]
+    [Display(Name = "Макс. сборки")]
     public int MaxCase { get; set; }
     [Required]
     [Display(Name = "Макс. артефакты")]
     public int MaxArt { get; set; }
-    public ICollection<User> Users { get; set; }
-    public Role()
-    {
-        Users = new List<User>();
-    }
 }

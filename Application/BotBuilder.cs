@@ -8,13 +8,25 @@ using StalNoteM.Data.AuctionItem;
 using StalNoteM.Data.Users;
 using Telegram.Bot;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
+using Microsoft.AspNetCore.Identity;
 
 namespace StalNoteM.Application
 {
     public class BotBuilder
     {
+        private readonly UserManager<StalNoteM.Data.Users.User> _userManager;
+        private readonly RoleManager<Role> _roleManager;
+        private readonly SignInManager<User> _signInManager;
+        public BotBuilder(UserManager<StalNoteM.Data.Users.User> userManager, RoleManager<Role> roleManager, SignInManager<User> signInManager)
+        {
+            _userManager = userManager;
+            _roleManager = roleManager;
+            _signInManager = signInManager;
+        }
+
         private static TimerCallback tMSender = new TimerCallback(BotSender.StartSend);
         private static Timer TimerSender;
+        private static Timer TimerUpdateInfo;
         /// <summary>
         /// Инициализация токена авторизации Stalcraft API
         /// </summary>
@@ -264,7 +276,7 @@ namespace StalNoteM.Application
             }
             await FindUniqueItemId();
             await InitialToken();
-            await TelegramBotApp.Initial(AppConfig.TelegramBotToken);
+            await TelegramBotApp.Initial(AppConfig.TelegramBotToken, _userManager,_roleManager,_signInManager);
             sw.Stop();
             Succesed($"Инициализация бота выполнена в {DateTime.Now.ToShortTimeString()}\n" +
                      $"Инициализация выполнено за {sw.ElapsedMilliseconds} мили секунд\n");
@@ -564,6 +576,11 @@ namespace StalNoteM.Application
         public void StartBeagling(int delay)
         {
             TimerSender = new Timer(tMSender, 0, 0, delay);
+            TimerUpdateInfo = new Timer(new TimerCallback(UpdateInfo),0,0,1800000);
+        }
+        public void UpdateInfo(object obj) 
+        {
+            FindUniqueItemId();
         }
         public async void sendMsgAllUsers(string text,string img)
         {

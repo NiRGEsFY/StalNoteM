@@ -290,14 +290,9 @@ namespace StalNoteM.Application
             var sendMenu = new InlineKeyboardMarkup(sendMenuPart);
             return sendMenu;
         }
-        public static IReplyMarkup ChoiseItemTime(string itemId,long chatId)
+        public static IReplyMarkup ChoiseItemTime(string itemId,long chatId, string roleName)
         {
             List<int> times = new List<int>() { 6, 12, 24, 48, 72, 168, 336, 672 };
-            string roleName;
-            using (var context = new ApplicationDbContext())
-            {
-                roleName = context.Users.Include(x => x.UserTelegram).Where(x => x.UserTelegram.ChatId == chatId).Include(x => x.Role).First().Role.Name;
-            }
             switch (roleName) 
             {
                 case "Новичек":
@@ -366,18 +361,11 @@ namespace StalNoteM.Application
             var sendMenu = new InlineKeyboardMarkup(sendMenuPart);
             return sendMenu;
         }
-        public static IReplyMarkup UserSetting(long chatId)
+        public static IReplyMarkup UserSetting(StalNoteM.Data.Users.User user, StalNoteM.Data.Users.Role role)
         {
-            using (var context = new ApplicationDbContext())
-            {
-                Data.Users.User user = context.Users.Include(x=>x.UserTelegram)
-                                                    .Where(x=>x.UserTelegram.ChatId == chatId)
-                                                    .Include(x=>x.UserConfig)
-                                                    .Include(x=>x.Role)
-                                                    .FirstOrDefault();
 
                 var sendMenuPart = new List<List<InlineKeyboardButton>>();
-                if (user.Role.Cost > -1)
+                if (role.Cost > -1)
                 {
                     sendMenuPart.Add(new List<InlineKeyboardButton>()
                             {
@@ -386,7 +374,8 @@ namespace StalNoteM.Application
                                     callbackData: $"Настройки|Арт"
                             )});
                 }
-                if (user.Role.Cost > 199)
+
+                if (role.Cost > 199)
                 {
                     sendMenuPart.Add(new List<InlineKeyboardButton>()
                             {
@@ -403,7 +392,6 @@ namespace StalNoteM.Application
                             )});
                 var sendMenu = new InlineKeyboardMarkup(sendMenuPart);
                 return sendMenu;
-            }
         }
         public static IReplyMarkup PremiumMenus()
         {

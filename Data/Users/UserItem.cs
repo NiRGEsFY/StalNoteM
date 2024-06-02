@@ -1,12 +1,14 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace StalNoteM.Data.Users;
 
+
+[PrimaryKey(nameof(Id))]
 public class UserItem
 {
-    [Key]
     public long Id { get; set; }
     [MaxLength(100)]
     [Display(Name = "Название предмета")]
