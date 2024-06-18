@@ -29,7 +29,7 @@ namespace StalNoteM.Application
         {
             BotBuilder builder = new BotBuilder(_userManager, _roleManager, _signInManager);
             await builder.InitialApp();
-            builder.StartBeagling(12000);
+            builder.StartBeagling(20000);
         }
     }
 }

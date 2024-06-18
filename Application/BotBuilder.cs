@@ -211,7 +211,7 @@ namespace StalNoteM.Application
             {
                 if (!String.IsNullOrEmpty(AppConfig.AccessSecret) || !String.IsNullOrEmpty(AppConfig.AccessToken) || !String.IsNullOrEmpty(AppConfig.Token_type) || AppConfig.ApplicationId == 0)
                 {
-                    using (var reader = new StreamReader("F:\\StalNote\\StalNoteBot\\StalNoteM\\bin\\Debug\\net8.0\\config.txt"))
+                    using (var reader = new StreamReader("config.txt"))
                     {
                         string line;
                         while ((line = await reader.ReadLineAsync()) != null)
@@ -248,7 +248,9 @@ namespace StalNoteM.Application
                                 case "WayGraphs":
                                     AppConfig.WayGraphs = line.Split().Last();
                                     break;
-
+                                case "LinkDB":
+                                    AppConfig.linkDB = line.Remove(0,9);
+                                    break;
                                 default:
                                     Error($"Ошибка чтения файла" +
                                           $"\nОшибка в строке: {line}\n");

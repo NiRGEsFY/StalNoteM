@@ -20,7 +20,6 @@ public class User : IdentityUser<long>, IDisposable, ICloneable
     public DateTime? StartRole { get; set; }
     [Display(Name = "Конец действия роли")]
     public DateTime? EndRole { get; set; }
-    public Guid userToken {  get; set; }
     public User()
     {
         UserItems = new List<UserItem>();

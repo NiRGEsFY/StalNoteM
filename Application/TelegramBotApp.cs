@@ -113,7 +113,6 @@ namespace StalNoteM.Application
                         newUser.UserTelegram.LastName = msg.Chat.LastName;
                         newUser.UserConfig = new UserConfig();
                         newUser.UserToken = new UserToken();
-                        newUser.userToken = Guid.NewGuid();
                         newUser.UserName = msg.Chat.Username ?? msg.Chat.FirstName ?? msg.Chat.LastName;
 
                         using (var findLikeName = await _userManager.FindByNameAsync(newUser.UserName))
@@ -376,7 +375,7 @@ namespace StalNoteM.Application
                 case "/start":
                     await botClient.SendTextMessageAsync(msg.Chat.Id,"Меню:",replyMarkup: TelegramMenus.StartMenu());
                     break;
-                case "Аукционная ищейка (разраб)":
+                case "Аукционная ищейка":
                     await botClient.SendTextMessageAsync(msg.Chat.Id, "Меню ищеек:", replyMarkup: TelegramMenus.AuctionHunter());
                     break;
                 case "Профиль статс (не раб.)":

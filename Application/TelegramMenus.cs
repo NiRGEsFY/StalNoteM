@@ -12,8 +12,8 @@ namespace StalNoteM.Application
         {
             var keyBoard = new ReplyKeyboardMarkup(new List<List<KeyboardButton>>
                 {
-                    new List<KeyboardButton>{ new KeyboardButton("Аукционная ищейка (разраб)"), new KeyboardButton("Профиль статс (не раб.)") },
-                    new List<KeyboardButton>{ new KeyboardButton("Привилегии"), new KeyboardButton("Жалобы/Предложения") }
+                    new List<KeyboardButton>{ new KeyboardButton("Аукционная ищейка"), new KeyboardButton("Профиль статс (не раб.)") },
+                    new List<KeyboardButton>{ new KeyboardButton("Авторизация"), new KeyboardButton("Жалобы/Предложения") }
                 });
             keyBoard.IsPersistent = true;
             keyBoard.ResizeKeyboard = true;
@@ -51,6 +51,13 @@ namespace StalNoteM.Application
                             )});
             var sendMenu = new InlineKeyboardMarkup(sendMenuPart);
             return sendMenu;
+        }
+        public static IReplyMarkup AutorizeMenu(StalNoteM.Data.Users.User user)
+        {
+            var menuContrustor = new List<InlineKeyboardButton>();
+
+            var menu = new InlineKeyboardMarkup(menuContrustor);
+            return menu;
         }
         public static IReplyMarkup ChoiceQualityArtefact(string itemId)
         {

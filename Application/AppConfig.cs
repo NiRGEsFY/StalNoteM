@@ -21,5 +21,6 @@ namespace StalNoteM.Application
         public static string WayGraphs {  get; set; }
         public static double CountMinuts { get; set; }
         public static List<Data.DataItem.Item> Items { get; set; }
+        public static string linkDB {  get; set; }
     }
 }

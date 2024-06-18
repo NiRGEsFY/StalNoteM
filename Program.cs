@@ -7,6 +7,7 @@ using StalNoteM.Data.Users;
 
 namespace StalNoteM
 {
+
     internal class Program
     {
 
@@ -36,7 +37,7 @@ namespace StalNoteM
         }
         static async Task Main(string[] args)
         {
-            bool updateDb = true;
+            bool updateDb = false;
             if (!updateDb)
             {
                 var serviceCollection = new ServiceCollection();
@@ -45,9 +46,12 @@ namespace StalNoteM
                 var serviceProvider = serviceCollection.BuildServiceProvider();
 
                 await serviceProvider.GetService<App>().Run();
-                Console.ReadLine();
-            }
 
+                while (true)
+                {
+                    Thread.Sleep(1000000);
+                }
+            }
 
             /*
             builder.sendMsgAllUsers(

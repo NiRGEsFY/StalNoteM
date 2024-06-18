@@ -170,7 +170,7 @@ namespace StalNoteM.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AucItems");
+                    b.ToTable("AucItems", (string)null);
                 });
 
             modelBuilder.Entity("StalNoteM.Data.AuctionItem.SelledItem", b =>
@@ -206,7 +206,7 @@ namespace StalNoteM.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SelledItems");
+                    b.ToTable("SelledItems", (string)null);
                 });
 
             modelBuilder.Entity("StalNoteM.Data.DataItem.ArmorItem", b =>
@@ -325,7 +325,7 @@ namespace StalNoteM.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ArmorsItems");
+                    b.ToTable("ArmorsItems", (string)null);
                 });
 
             modelBuilder.Entity("StalNoteM.Data.DataItem.ArtefactItem", b =>
@@ -576,7 +576,7 @@ namespace StalNoteM.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ArtefactItems");
+                    b.ToTable("ArtefactItems", (string)null);
                 });
 
             modelBuilder.Entity("StalNoteM.Data.DataItem.Bullet", b =>
@@ -643,7 +643,7 @@ namespace StalNoteM.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Bullets");
+                    b.ToTable("Bullets", (string)null);
                 });
 
             modelBuilder.Entity("StalNoteM.Data.DataItem.CaseItem", b =>
@@ -713,7 +713,7 @@ namespace StalNoteM.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CaseItems");
+                    b.ToTable("CaseItems", (string)null);
                 });
 
             modelBuilder.Entity("StalNoteM.Data.DataItem.SqlItem", b =>
@@ -759,7 +759,7 @@ namespace StalNoteM.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SqlItems");
+                    b.ToTable("SqlItems", (string)null);
                 });
 
             modelBuilder.Entity("StalNoteM.Data.DataItem.WeaponItem", b =>
@@ -886,7 +886,7 @@ namespace StalNoteM.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("WeaponsItems");
+                    b.ToTable("WeaponsItems", (string)null);
                 });
 
             modelBuilder.Entity("StalNoteM.Data.Other.Advertising", b =>
@@ -918,7 +918,7 @@ namespace StalNoteM.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Advertisings");
+                    b.ToTable("Advertisings", (string)null);
                 });
 
             modelBuilder.Entity("StalNoteM.Data.Users.Role", b =>
@@ -1024,9 +1024,6 @@ namespace StalNoteM.Migrations
                     b.Property<string>("UserName")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
-
-                    b.Property<Guid>("userToken")
-                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
@@ -1153,7 +1150,7 @@ namespace StalNoteM.Migrations
 
                     b.HasIndex("ThirdArtefactId");
 
-                    b.ToTable("UserCases");
+                    b.ToTable("UserCases", (string)null);
                 });
 
             modelBuilder.Entity("StalNoteM.Data.Users.UserConfig", b =>
@@ -1178,7 +1175,7 @@ namespace StalNoteM.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("UserConfig");
+                    b.ToTable("UserConfig", (string)null);
                 });
 
             modelBuilder.Entity("StalNoteM.Data.Users.UserItem", b =>
@@ -1215,7 +1212,7 @@ namespace StalNoteM.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserItems");
+                    b.ToTable("UserItems", (string)null);
                 });
 
             modelBuilder.Entity("StalNoteM.Data.Users.UserTelegram", b =>
@@ -1252,7 +1249,7 @@ namespace StalNoteM.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("UserTelegrams");
+                    b.ToTable("UserTelegrams", (string)null);
                 });
 
             modelBuilder.Entity("StalNoteM.Data.Users.UserToken", b =>
@@ -1283,7 +1280,7 @@ namespace StalNoteM.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("UserTokens");
+                    b.ToTable("UserTokens", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<long>", b =>

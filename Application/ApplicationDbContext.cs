@@ -5,6 +5,7 @@ using StalNoteM.Data.Other;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using StalNoteM.Application;
 
 namespace StalNoteM;
 
@@ -47,7 +48,7 @@ public partial class ApplicationDbContext : IdentityDbContext<User,Role, long>
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
         options.UseSqlServer(
-            "data source=(localdb)\\MSSQLLocalDB;Initial Catalog=Stalcraft2;Integrated Security=True;MultipleActiveResultSets=True;Connection Timeout=3600;"
+            $"{AppConfig.linkDB}"
             );
     }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
