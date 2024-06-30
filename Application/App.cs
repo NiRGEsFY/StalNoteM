@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.IdentityModel.Tokens;
 using StalNoteM.Data.DataItem;
 using StalNoteM.Data.Users;
@@ -17,17 +18,19 @@ namespace StalNoteM.Application
         private readonly UserManager<StalNoteM.Data.Users.User> _userManager;
         private readonly RoleManager<Role> _roleManager;
         private readonly SignInManager<User> _signInManager;
+        private IDistributedCache _redis;
 
-        public App(UserManager<StalNoteM.Data.Users.User> userManager, RoleManager<Role> roleManager, SignInManager<User> signInManager)
+        public App(UserManager<StalNoteM.Data.Users.User> userManager, RoleManager<Role> roleManager, SignInManager<User> signInManager, IDistributedCache cache)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _signInManager = signInManager;
+            _redis = cache;
         }
 
         public async Task Run()
         {
-            BotBuilder builder = new BotBuilder(_userManager, _roleManager, _signInManager);
+            BotBuilder builder = new BotBuilder(_userManager, _roleManager, _signInManager, _redis);
             await builder.InitialApp();
             builder.StartBeagling(20000);
         }

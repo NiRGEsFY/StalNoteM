@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using StalNoteM.Application;
 using StalNoteM.Data.Users;
@@ -13,6 +14,13 @@ namespace StalNoteM
 
         public static void ConfigureServices(IServiceCollection services)
         {
+            // Add Redis
+            services.AddStackExchangeRedisCache(cache =>
+            {
+                cache.Configuration = "localhost";
+                cache.InstanceName = "local";
+            });
+
             // Add DbContext
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer("data source=(localdb)\\MSSQLLocalDB;Initial Catalog=Stalcraft2;Integrated Security=True;MultipleActiveResultSets=True;"));

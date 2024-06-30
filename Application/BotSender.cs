@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
 using StalNoteM.Data.AuctionItem;
 using System.Data;
@@ -6,14 +8,31 @@ using System.Diagnostics;
 
 namespace StalNoteM.Application
 {
+    public class LotComparer : IEqualityComparer<AucItem>
+    {
+        public bool Equals(AucItem x, AucItem y)
+        {
+            if (x is null || y is null)
+                return false;
+
+            return (x.StartTime == y.StartTime && x.EndTime == y.EndTime);
+        }
+        public int GetHashCode(AucItem obj) => obj.GetHashCode();
+    }
     public class BotSender
     {
+        public async static Task SetCache(IDistributedCache redis)
+        {
+            _redis = redis;
+        }
         private static int HistorySpliter = 0;
         private static bool lockerSendMsg = false;
         private static bool lockerInputAuc = true;
         private static List<string> allFindingItem;
+        private static IDistributedCache _redis;
         public static async void StartSend(object obj)
         {
+            //Start
             AppConfig.CountMinuts += 1;
             if (AppConfig.CountMinuts == 1)
             {
@@ -21,6 +40,7 @@ namespace StalNoteM.Application
                 UpdateInfoBlock();
                 return;
             }
+            //Update auction
             if ((AppConfig.CountMinuts % 30 != 0) && lockerSendMsg)
             {
                 if (lockerInputAuc)
@@ -37,11 +57,17 @@ namespace StalNoteM.Application
                         {
                             var sw = new Stopwatch();
                             sw.Start();
-                            List<AucItem> items = context.AucItems.Where(x => x.StartTime > DateTime.Now.AddHours(-3).AddMinutes(-2) && x.State == false).ToList();
+                            List<AucItem> allAucItem = new List<AucItem>();
+                            foreach (var id in allFindingItem)
+                            {
+                                var lots = JsonConvert.DeserializeObject<List<AucItem>>(await _redis.GetStringAsync($"Auc|{id}")).Where(x=>x.State == false);
+                                allAucItem.AddRange(lots);
+                            }
+                            List<AucItem> items = allAucItem.Where(x => x.StartTime > DateTime.Now.AddHours(-3).AddMinutes(-2)).ToList();
                             List<AucItem> removeItems = new List<AucItem>();
                             foreach (var item in items)
                             {
-                                if ((context.SqlItems.Where(x => x.ItemId == item.ItemId && x.Pottential == item.Pottential && x.Quality == item.Quality)
+                                if ((StaticData.SqlItems.Where(x => x.ItemId == item.ItemId && x.Pottential == item.Pottential && x.Quality == item.Quality)
                                                     .FirstOrDefault().MinBuyPrice) < item.BuyoutPrice || item.BuyoutPrice == 0)
                                 {
                                     removeItems.Add(item);
@@ -55,9 +81,9 @@ namespace StalNoteM.Application
                             }
                             foreach (var item in items)
                             {
-                                bool isArtefact = context.SqlItems.Where(x => x.ItemId == item.ItemId).FirstOrDefault().Type.Contains("artefact");
+                                bool isArtefact = StaticData.SqlItems.Where(x => x.ItemId == item.ItemId).FirstOrDefault().Type.Contains("artefact");
                                 List<Data.Users.User> users = new List<Data.Users.User>();
-                                long averagePrice = context.SqlItems.Where(x => x.ItemId == item.ItemId
+                                long averagePrice = StaticData.SqlItems.Where(x => x.ItemId == item.ItemId
                                                                              && x.Quality == item.Quality
                                                                              && x.Pottential == item.Pottential).First().AveragePrice;
                                 long minBuyPrice = (long)(averagePrice * 0.92);
@@ -203,91 +229,67 @@ namespace StalNoteM.Application
                     }
                 }
             }
-            else if(AppConfig.CountMinuts % 180 == 0 && AppConfig.CountMinuts != 0)
+            //Update history
+            else if(AppConfig.CountMinuts % 30 == 0 && AppConfig.CountMinuts != 0)
             {
+                lockerInputAuc = false;
                 UpdateInfoBlock();
+                lockerInputAuc = true;
+            }
+            //Update cache
+            else if (AppConfig.CountMinuts % 180 == 0 && AppConfig.CountMinuts != 0)
+            {
+                try
+                {
+                    UpdateAveragePrice();
+                }
+                catch (Exception ex)
+                {
+                    BotBuilder.Error("Ошибка обновления средней  цены", ex);
+                }
             }
         }
         public async static Task InputItemInAuction()
         {
-            void InputItem(object input)
+            async void InputItem(object input)
             {
                 string item = input.ToString();
-                var allLotInAuction = ServerRequester.TakeItem(item, "ru", 15);
+                var allLotInAuction = ServerRequester.TakeItem(item, "ru", 200);
                 if (allLotInAuction == null || allLotInAuction.Lots == null)
                 {
                     return;
                 }
                 var pieceOfLotInAuction = new List<AucItem>();
-                DateTime? timeLastLotInAucBase = null;
-                IOrderedQueryable<AucItem> tempLastDateItem = null;
-                object locker = new object();
-                using (var context = new ApplicationDbContext())
+                foreach (var lot in allLotInAuction.Lots)
                 {
-                    try
-                    {
-                        tempLastDateItem = context.AucItems.Where(x => x.ItemId == item).OrderByDescending(x => x.StartTime);
-                        if (tempLastDateItem.Count() > 0)
-                            timeLastLotInAucBase = tempLastDateItem.First().StartTime;
-                        else
-                            timeLastLotInAucBase = DateTime.Now.AddDays(-1);
-                    }
-                    catch 
-                    {
-                        timeLastLotInAucBase = DateTime.Now.AddDays(-1);
-                    }
+                    pieceOfLotInAuction.Add(lot.Parse());
                 }
-                if (allLotInAuction != null && allLotInAuction.Lots != null)
+                var oldItems = JsonConvert.DeserializeObject<List<AucItem>>(await _redis.GetStringAsync($"Auc|{item}"));
+                var removeList = new List<AucItem>();
+                var addList = new List<AucItem>();
+                //Поиск лотов на удаленние из старого списка
+                foreach (var lot in oldItems)
+                    if (!pieceOfLotInAuction.Contains(lot, new LotComparer()))
+                        removeList.Add(lot);
+                //Поиск лотов которые необходимо добавить в кэш
+                foreach(var lot in pieceOfLotInAuction)
+                    if(!oldItems.Contains(lot, new LotComparer()))
+                        addList.Add(lot);
+                //Удаление лотов из списка
+                foreach (var lot in removeList)
+                    oldItems.Remove(lot);
+                
+                oldItems.AddRange(addList);
+                //Кэширование нового списка
+                var itemsJson = JsonConvert.SerializeObject(oldItems);
+                if (String.IsNullOrEmpty(itemsJson))
                 {
-                    if (timeLastLotInAucBase != null)
-                    {
-                        using (var context = new ApplicationDbContext())
-                        {
-                            pieceOfLotInAuction = new List<AucItem>();
-                            allLotInAuction.Lots = allLotInAuction.Lots.Where(x => x.StartTime <= DateTime.Now && x.StartTime > timeLastLotInAucBase).ToList();
-                            if (allLotInAuction.Lots == null)
-                            {
-                                Console.ForegroundColor = ConsoleColor.Yellow;
-                                Console.WriteLine("\"ServerRequester.TakeItem \"Не смог получить ответ от сервера");
-                                Console.ForegroundColor = ConsoleColor.White;
-                                return;
-                            }
-                            foreach (var lot in allLotInAuction.Lots)
-                            {
-                                pieceOfLotInAuction.Add(lot.Parse());
-                            }
-                            lock (locker)
-                            {
-                                context.AucItems.AddRange(pieceOfLotInAuction);
-                                context.SaveChanges();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        using (var context = new ApplicationDbContext())
-                        {
-                            pieceOfLotInAuction = new List<AucItem>();
-                            allLotInAuction.Lots = allLotInAuction.Lots.ToList();
-                            if (allLotInAuction.Lots == null)
-                            {
-                                Console.ForegroundColor = ConsoleColor.Yellow;
-                                Console.WriteLine("\"ServerRequester.TakeItem \"Не смог получить ответ от сервера");
-                                Console.ForegroundColor = ConsoleColor.White;
-                                return;
-                            }
-                            foreach (var lot in allLotInAuction.Lots)
-                            {
-                                pieceOfLotInAuction.Add(lot.Parse());
-                            }
-                            lock (locker)
-                            {
-                                context.AucItems.AddRange(pieceOfLotInAuction);
-                                context.SaveChanges();
-                            }
-                        }
-                    }
+                    return;
                 }
+                await _redis.SetStringAsync($"Auc|{item}", itemsJson, new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(2)
+                });
             }
             var sw = new Stopwatch();
             var swRequest = new Stopwatch();
@@ -330,7 +332,7 @@ namespace StalNoteM.Application
         }
         public static void InputItemInHistory()
         {
-            int spliter = 5;
+            int spliter = 90;
             void InputItem(object input)
             {
                 string item = input.ToString();
@@ -338,131 +340,122 @@ namespace StalNoteM.Application
                 var pieceOfLotByed = new List<SelledItem>();
                 DateTime? timeLastLotByedBase;
                 var addLotByed = new List<SelledItem>();
-                IOrderedQueryable<SelledItem> tempLastDateSelledItem;
+                SelledItem tempLastDateSelledItem;
                 object locker = new object();
-                using (var context = new ApplicationDbContext())
-                {
-                    tempLastDateSelledItem = context.SelledItems
-                        .Where(x => x.ItemId == item)
-                        .OrderByDescending(x => x.Time);
-                    if (tempLastDateSelledItem.Count() > 0)
-                        timeLastLotByedBase = tempLastDateSelledItem.First().Time;
-                    else
-                        timeLastLotByedBase = null;
-                }
+                //Выборка по последний дате
+                tempLastDateSelledItem = StaticData.LastAdditionItems.Where(x => x.ItemId == item).First();
+                if (tempLastDateSelledItem != null)
+                    timeLastLotByedBase = tempLastDateSelledItem.Time;
+                else
+                    timeLastLotByedBase = null;
+
                 if (allLotByed != null && allLotByed.Prices != null)
                 {
                     if (timeLastLotByedBase != null)
                     {
-                        using (var context = new ApplicationDbContext())
-                        {
-                            pieceOfLotByed = new List<SelledItem>();
-                            allLotByed.Prices = allLotByed.Prices.Where(x => x.Time <= DateTime.Now && x.Time > timeLastLotByedBase).ToList();
+                        pieceOfLotByed = new List<SelledItem>();
+                        allLotByed.Prices = allLotByed.Prices.Where(x => x.Time <= DateTime.Now && x.Time > timeLastLotByedBase).ToList();
 
-                            if (allLotByed.Prices == null)
-                            {
-                                BotBuilder.Error("\"ServerRequester.TakeHistory \"Не смог получить ответ от сервера или ответ был пуст");
-                                return;
-                            }
-                            foreach (var lot in allLotByed.Prices)
-                            {
-                                pieceOfLotByed.Add(lot.Parse(allLotByed.ItemId));
-                            }
-                            lock (locker)
-                            {
-                                context.SelledItems.AddRange(pieceOfLotByed);
-                                context.SaveChanges();
-                            }
+                        if (allLotByed.Prices == null)
+                        {
+                            BotBuilder.Error("\"ServerRequester.TakeHistory \"Не смог получить ответ от сервера или ответ был пуст");
+                            return;
+                        }
+                        foreach (var lot in allLotByed.Prices)
+                        {
+                            pieceOfLotByed.Add(lot.Parse(allLotByed.ItemId));
+                        }
+                        lock (locker)
+                        {
+                            StaticData.TempDataSelledItem.AddRange(pieceOfLotByed);
                         }
                     }
                     else
                     {
-                        using (var context = new ApplicationDbContext())
-                        {
-                            pieceOfLotByed = new List<SelledItem>();
-                            allLotByed.Prices = allLotByed.Prices.ToList();
+                        pieceOfLotByed = new List<SelledItem>();
+                        allLotByed.Prices = allLotByed.Prices.ToList();
 
-                            if (allLotByed.Prices == null)
-                            {
-                                Console.ForegroundColor = ConsoleColor.Yellow;
-                                Console.WriteLine("\"ServerRequester.TakeHistory \"Не смог получить ответ от сервера");
-                                Console.ForegroundColor = ConsoleColor.White;
-                                return;
-                            }
-                            foreach (var lot in allLotByed.Prices)
-                            {
-                                pieceOfLotByed.Add(lot.Parse(allLotByed.ItemId));
-                            }
-                            lock (locker)
-                            {
-                                context.SelledItems.AddRange(pieceOfLotByed);
-                                context.SaveChanges();
-                            }
+                        if (allLotByed.Prices == null)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Yellow;
+                            Console.WriteLine("\"ServerRequester.TakeHistory \"Не смог получить ответ от сервера");
+                            Console.ForegroundColor = ConsoleColor.White;
+                            return;
+                        }
+                        foreach (var lot in allLotByed.Prices)
+                        {
+                            pieceOfLotByed.Add(lot.Parse(allLotByed.ItemId));
+                        }
+                        lock (locker)
+                        {
+                            StaticData.TempDataSelledItem.AddRange(pieceOfLotByed);
                         }
                     }
                 }
                 else
                 {
-                    using (var context = new ApplicationDbContext())
-                    {
-                        string itemName = context.SqlItems.Where(x => x.ItemId == item).First().Name;
-                        Console.WriteLine($"Ошибка запроса в проданных товарах у {itemName}");
-                    }
+                    string itemName = StaticData.SqlItems.Where(x => x.ItemId == item).First().Name;
+                    Console.WriteLine($"Ошибка запроса в проданных товарах у {itemName}");
                 }
             }
-            var sw = new Stopwatch();
-            var swRequest = new Stopwatch();
-            sw.Start();
             lockerSendMsg = false;
-            using (var context = new ApplicationDbContext())
-            {
-                List<Thread> threads = new List<Thread>();
-                var itemFindArray = context.SqlItems.Where(x=>x.Pottential == 0).Select(x=>x.ItemId).Distinct().ToArray();
-                int maxLenght = itemFindArray.Length;
-                int spliteLenght = maxLenght / spliter;
 
-                switch (HistorySpliter)
+            List<Thread> threads = new List<Thread>();
+            var itemFindArray = StaticData.SqlItems.Where(x=>x.Pottential == 0).Select(x=>x.ItemId).Distinct().ToArray();
+            int maxLenght = itemFindArray.Length;
+            int spliteLenght = maxLenght / spliter;
+
+            if (HistorySpliter == spliter-1)
+            {
+                for (int i = spliteLenght * HistorySpliter; i < maxLenght; i++)
                 {
-                    case 4:
-                        for (int i = spliteLenght * HistorySpliter; i < maxLenght; i++)
-                        {
-                            threads.Add(new Thread(InputItem));
-                        }
-                        for (int i = 0; i < maxLenght - (spliteLenght * HistorySpliter); i++)
-                        {
-                            Thread.Sleep(250);
-                            threads[i].Name = itemFindArray[i];
-                            threads[i].Start(itemFindArray[(spliteLenght * HistorySpliter) + i]);
-                        }
-                        break;
-                    default:
-                        for (int i = spliteLenght * HistorySpliter; i < (spliteLenght * (HistorySpliter + 1)) + 10; i++)
-                        {
-                            threads.Add(new Thread(InputItem));
-                        }
-                        for (int i = 0; i < spliteLenght + 10; i++)
-                        {
-                            Thread.Sleep(250);
-                            threads[i].Name = itemFindArray[i];
-                            threads[i].Start(itemFindArray[(spliteLenght * HistorySpliter) + i]);
-                        }
-                        break;
+                    threads.Add(new Thread(InputItem));
                 }
-                if (threads.Count() > 0)
+                for (int i = 0; i < maxLenght - (spliteLenght * HistorySpliter); i++)
                 {
-                    threads.Last().Join();
+                    Thread.Sleep(250);
+                    threads[i].Name = itemFindArray[i];
+                    threads[i].Start(itemFindArray[(spliteLenght * HistorySpliter) + i]);
+                }
+            }
+            else
+            {
+                for (int i = spliteLenght * HistorySpliter; i < (spliteLenght * (HistorySpliter + 1)) + 3; i++)
+                {
+                    threads.Add(new Thread(InputItem));
+                }
+                for (int i = 0; i < spliteLenght + 3; i++)
+                {
+                    Thread.Sleep(250);
+                    threads[i].Name = itemFindArray[i];
+                    threads[i].Start(itemFindArray[(spliteLenght * HistorySpliter) + i]);
                 }
             }
             lockerSendMsg = true;
-            sw.Stop();
-            Thread.Sleep(60000);
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"Добавление проданных предметов в базу данных в {DateTime.Now.ToShortTimeString()}\n" +
-                              $"Добавление выполнено за {sw.ElapsedMilliseconds} мили секунд\n");
-            Console.ForegroundColor = ConsoleColor.White;
-            
-            if (HistorySpliter >= 4)
+
+            if (HistorySpliter >= spliter-1)
             {
+                using (var context = new ApplicationDbContext())
+                {
+                    context.SelledItems.AddRange(StaticData.TempDataSelledItem);
+
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"Добавление проданных предметов в базу данных в {DateTime.Now.ToShortTimeString()}\n" +
+                                      $"В базу было добавленно {StaticData.TempDataSelledItem.Count} вещей\n");
+                    Console.ForegroundColor = ConsoleColor.White;
+
+
+                    StaticData.TempDataSelledItem = new List<SelledItem>();
+
+                    StaticData.LastAdditionItems = new List<SelledItem>();
+                    var allselled = context.SelledItems.OrderByDescending(x => x.Time);
+                    foreach (var item in allFindingItem)
+                    {
+                        StaticData.LastAdditionItems.Add(allselled.Where(x => x.ItemId == item).First());
+                    }
+
+
+                }
                 HistorySpliter = 0;
             }
             else
@@ -582,23 +575,11 @@ namespace StalNoteM.Application
             }
             try
             {
-                using (var context = new ApplicationDbContext())
-                {
-                    allFindingItem = context.SqlItems.Where(x => x.Finding == true).Select(x => x.ItemId).Distinct().ToList();
-                }
+                allFindingItem = StaticData.SqlItems.Where(x => x.Finding == true).Select(x => x.ItemId).Distinct().ToList();
             }
             catch(Exception ex)
             {
                 BotBuilder.Error("Ошибка запроса всех предметов в поиске", ex);
-            }
-
-            try
-            {
-                UpdateAveragePrice();
-            }
-            catch (Exception ex)
-            {
-                BotBuilder.Error("Ошибка обновления средней  цены", ex);
             }
         }
     }

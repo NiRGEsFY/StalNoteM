@@ -9,6 +9,9 @@ using StalNoteM.Data.Users;
 using Telegram.Bot;
 using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text.Json;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace StalNoteM.Application
 {
@@ -17,11 +20,13 @@ namespace StalNoteM.Application
         private readonly UserManager<StalNoteM.Data.Users.User> _userManager;
         private readonly RoleManager<Role> _roleManager;
         private readonly SignInManager<User> _signInManager;
-        public BotBuilder(UserManager<StalNoteM.Data.Users.User> userManager, RoleManager<Role> roleManager, SignInManager<User> signInManager)
+        private IDistributedCache _redis;
+        public BotBuilder(UserManager<StalNoteM.Data.Users.User> userManager, RoleManager<Role> roleManager, SignInManager<User> signInManager, IDistributedCache redis)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _signInManager = signInManager;
+            _redis = redis;
         }
 
         private static TimerCallback tMSender = new TimerCallback(BotSender.StartSend);
@@ -279,6 +284,7 @@ namespace StalNoteM.Application
             await FindUniqueItemId();
             await InitialToken();
             await TelegramBotApp.Initial(AppConfig.TelegramBotToken, _userManager,_roleManager,_signInManager);
+            await BotSender.SetCache(_redis);
             sw.Stop();
             Succesed($"Инициализация бота выполнена в {DateTime.Now.ToShortTimeString()}\n" +
                      $"Инициализация выполнено за {sw.ElapsedMilliseconds} мили секунд\n");
@@ -286,13 +292,14 @@ namespace StalNoteM.Application
         private async Task InitialSqlItems()
         {
             string WayItems = AppConfig.WayItems;
+
             using (var context = new ApplicationDbContext())
             {
                 context.SqlItems.RemoveRange(context.SqlItems);
                 context.SaveChanges();
                 if (context.SqlItems == null || context.SqlItems.Count() == 0)
                 {
-                    AppConfig.Items = new List<Data.DataItem.Item>();
+                    StaticData.Items = new List<Data.DataItem.Item>();
                     void findAllItem(string way)
                     {
                         DirectoryInfo thisDirectory = new DirectoryInfo(way);
@@ -317,7 +324,7 @@ namespace StalNoteM.Application
                                 }
                                 var tempItem = new Data.DataItem.Item();
                                 tempItem = JsonConvert.DeserializeObject<Data.DataItem.Item>(temp);
-                                AppConfig.Items.Add(tempItem);
+                                StaticData.Items.Add(tempItem);
                                 SqlItem newItem = new SqlItem();
                                 newItem.ItemId = tempItem.Id;
                                 newItem.Name = tempItem.Name.Lines.Ru;
@@ -337,9 +344,9 @@ namespace StalNoteM.Application
                                             newArt.Pottential = i;
                                             newArt.Quality = j;
                                             allAdd.Add(newArt);
+                                            
                                         }
                                     }
-                                    context.SqlItems.AddRange(allAdd);
                                 }
                                 else
                                 {
@@ -352,6 +359,14 @@ namespace StalNoteM.Application
                     findAllItem(WayItems);
                 }
                 await context.SaveChangesAsync();
+
+                string itemsJson = JsonConvert.SerializeObject(context.SqlItems.ToList());
+                await StaticData.Cache.SetStringAsync("SqlItem", itemsJson, new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1)
+                });
+                StaticData.SqlItems = context.SqlItems.ToList();
+                
             }
         }
         private async Task InitialSiteItem()
@@ -545,7 +560,7 @@ namespace StalNoteM.Application
                 {
                     Id = x.ItemId
                 });
-                foreach (var item in context.SqlItems)
+                foreach (var item in StaticData.SqlItems)
                 {
                     item.Finding = false;
                 }
@@ -554,7 +569,7 @@ namespace StalNoteM.Application
                 {
                     try
                     {
-                        var items = context.SqlItems.Where(x => x.ItemId == item.Id);
+                        var items = StaticData.SqlItems.Where(x => x.ItemId == item.Id);
                         foreach (var itemJ in items)
                         {
                             itemJ.Finding = true;
@@ -572,7 +587,6 @@ namespace StalNoteM.Application
                         Error($"Ошибка в определении уникальных вещей {item}", ex);
                     }
                 }
-                await context.SaveChangesAsync();
             }
         }
         public void StartBeagling(int delay)
