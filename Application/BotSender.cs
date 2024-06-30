@@ -60,8 +60,17 @@ namespace StalNoteM.Application
                             List<AucItem> allAucItem = new List<AucItem>();
                             foreach (var id in allFindingItem)
                             {
-                                var lots = JsonConvert.DeserializeObject<List<AucItem>>(await _redis.GetStringAsync($"Auc|{id}")).Where(x=>x.State == false);
+                                var tempLots = JsonConvert.DeserializeObject<List<AucItem>>(await _redis.GetStringAsync($"Auc|{id}"));
+                                var lots = tempLots.Where(x=>x.State == false);
                                 allAucItem.AddRange(lots);
+                                foreach (var item in tempLots)
+                                {
+                                    item.State = true;
+                                }
+                                await _redis.SetStringAsync($"Auc|{id}", JsonConvert.SerializeObject(tempLots), new DistributedCacheEntryOptions
+                                {
+                                    AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(2)
+                                });
                             }
                             List<AucItem> items = allAucItem.Where(x => x.StartTime > DateTime.Now.AddHours(-3).AddMinutes(-2)).ToList();
                             List<AucItem> removeItems = new List<AucItem>();
